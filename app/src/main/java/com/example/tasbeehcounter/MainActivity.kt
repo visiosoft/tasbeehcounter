@@ -1,6 +1,9 @@
 package com.example.tasbeehcounter
 
+import android.content.Context
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -16,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     private var isCounting = false
     private lateinit var binding: ActivityMainBinding
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var vibrator: Vibrator
     private val gson = Gson()
     private val SAVED_COUNTS_KEY = "saved_counts"
 
@@ -25,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sharedPreferences = getSharedPreferences("TasbeehCounter", MODE_PRIVATE)
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         setupClickListeners()
     }
 
@@ -33,12 +38,26 @@ class MainActivity : AppCompatActivity() {
             if (isCounting) {
                 count++
                 updateCounterText()
+                // Add haptic feedback
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(50)
+                }
             }
         }
 
         binding.resetButton.setOnClickListener {
             count = 0
             updateCounterText()
+            // Add haptic feedback for reset
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(100)
+            }
         }
 
         binding.startStopButton.setOnClickListener {
@@ -50,6 +69,13 @@ class MainActivity : AppCompatActivity() {
                     if (isCounting) R.color.stop_color else R.color.start_color
                 )
             )
+            // Add haptic feedback for start/stop
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(75, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(75)
+            }
         }
 
         binding.saveButton.setOnClickListener {
