@@ -17,11 +17,13 @@ import android.content.SharedPreferences
 class MainActivity : AppCompatActivity() {
     private var count = 0
     private var isCounting = false
+    private var isVibrationEnabled = true
     private lateinit var binding: ActivityMainBinding
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var vibrator: Vibrator
     private val gson = Gson()
     private val SAVED_COUNTS_KEY = "saved_counts"
+    private val VIBRATION_ENABLED_KEY = "vibration_enabled"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,20 +32,31 @@ class MainActivity : AppCompatActivity() {
 
         sharedPreferences = getSharedPreferences("TasbeehCounter", MODE_PRIVATE)
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        
+        // Load vibration preference
+        isVibrationEnabled = sharedPreferences.getBoolean(VIBRATION_ENABLED_KEY, true)
+        updateVibrationButtonIcon()
+        
         setupClickListeners()
     }
 
     private fun setupClickListeners() {
+        binding.vibrationToggleButton.setOnClickListener {
+            isVibrationEnabled = !isVibrationEnabled
+            sharedPreferences.edit().putBoolean(VIBRATION_ENABLED_KEY, isVibrationEnabled).apply()
+            updateVibrationButtonIcon()
+            // Provide haptic feedback for the toggle itself
+            if (isVibrationEnabled) {
+                vibrate(50)
+            }
+        }
+
         binding.counterButton.setOnClickListener {
             if (isCounting) {
                 count++
                 updateCounterText()
-                // Add haptic feedback
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(50)
+                if (isVibrationEnabled) {
+                    vibrate(50)
                 }
             }
         }
@@ -51,12 +64,8 @@ class MainActivity : AppCompatActivity() {
         binding.resetButton.setOnClickListener {
             count = 0
             updateCounterText()
-            // Add haptic feedback for reset
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(100)
+            if (isVibrationEnabled) {
+                vibrate(100)
             }
         }
 
@@ -69,12 +78,8 @@ class MainActivity : AppCompatActivity() {
                     if (isCounting) R.color.stop_color else R.color.start_color
                 )
             )
-            // Add haptic feedback for start/stop
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(75, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(75)
+            if (isVibrationEnabled) {
+                vibrate(75)
             }
         }
 
@@ -84,6 +89,22 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Please count something first", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    private fun updateVibrationButtonIcon() {
+        binding.vibrationToggleButton.setIconResource(
+            if (isVibrationEnabled) android.R.drawable.ic_lock_silent_mode_off
+            else android.R.drawable.ic_lock_silent_mode
+        )
+    }
+
+    private fun vibrate(duration: Long) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(duration)
         }
     }
 
