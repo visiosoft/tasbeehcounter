@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateCounterText() {
-        binding.counterText.text = count.toString()
+        binding.counterButton.text = count.toString()
     }
 
     private fun saveCount() {
