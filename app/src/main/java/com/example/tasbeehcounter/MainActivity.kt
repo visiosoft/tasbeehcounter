@@ -13,30 +13,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupBottomNavigation()
-    }
-
-    private fun setupBottomNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.navigation_tasbeeh -> {
-                    showFragment(TasbeehFragment())
-                    true
-                }
-                R.id.navigation_qibla -> {
-                    showFragment(QiblaFragment())
-                    true
-                }
-                R.id.navigation_namaz -> {
-                    showFragment(NamazFragment())
-                    true
-                }
-                else -> false
-            }
-        }
-
-        // Set default selection
-        binding.bottomNavigation.selectedItemId = R.id.navigation_tasbeeh
+        // Show TasbeehFragment directly without bottom navigation
+        showFragment(TasbeehFragment())
     }
 
     private fun showFragment(fragment: Fragment) {

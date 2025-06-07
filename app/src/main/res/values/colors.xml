@@ -14,4 +14,12 @@
     <color name="reset_color">#F39C12</color>
     <color name="save_color">#3498DB</color>
     <color name="counter_button_color">#8E44AD</color>
+    
+    <!-- Adding missing color resources -->
+    <color name="primary">#FF6200EE</color>
+    <color name="primary_dark">#FF3700B3</color>
+    <color name="accent">#FF03DAC5</color>
+    <color name="background">#F5F5F5</color>
+    <color name="primary_text">#2C3E50</color>
+    <color name="secondary_text">#757575</color>
 </resources>
