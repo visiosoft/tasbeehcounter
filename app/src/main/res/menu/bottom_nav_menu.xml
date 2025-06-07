@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_qibla"
+        android:icon="@drawable/ic_qibla"
+        android:title="Qibla" />
+    <item
+        android:id="@+id/navigation_namaz"
+        android:icon="@drawable/ic_namaz"
+        android:title="Namaz" />
+    <item
+        android:id="@+id/navigation_tasbeeh"
+        android:icon="@drawable/ic_tasbeeh"
+        android:title="Tasbeeh" />
+</menu> 
