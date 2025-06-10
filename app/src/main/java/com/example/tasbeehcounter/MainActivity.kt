@@ -1,80 +1,61 @@
 package com.example.tasbeehcounter
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
 import com.example.tasbeehcounter.databinding.ActivityMainBinding
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import android.view.View
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set Tasbeeh as default selected item
-        binding.bottomNavigation.selectedItemId = R.id.navigation_tasbeeh
+        sharedPreferences = getSharedPreferences("TasbeehSettings", Context.MODE_PRIVATE)
         
-        setupBottomNavigation()
-        
-        // Show TasbeehFragment by default
-        if (savedInstanceState == null) {
-            showFragment(TasbeehFragment())
+        // Setup Navigation
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
+        binding.navView.setupWithNavController(navController)
+
+        // Set default values if not set
+        if (!sharedPreferences.contains("fullscreen")) {
+            sharedPreferences.edit().putBoolean("fullscreen", false).apply()
+        }
+        if (!sharedPreferences.contains("vibration")) {
+            sharedPreferences.edit().putBoolean("vibration", false).apply()
+        }
+        if (!sharedPreferences.contains("dark_mode")) {
+            sharedPreferences.edit().putBoolean("dark_mode", false).apply()
         }
     }
 
-    private fun setupBottomNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.navigation_tasbeeh -> {
-                    showFragment(TasbeehFragment())
-                    true
-                }
-                R.id.navigation_qibla -> {
-                    showFragment(QiblaFragment())
-                    true
-                }
-                R.id.navigation_namaz -> {
-                    showFragment(NamazFragment())
-                    true
-                }
-                R.id.navigation_settings -> {
-                    showFragment(SettingsFragment())
-                    true
-                }
-                else -> false
-            }
+    fun updateFullscreenMode() {
+        val isFullscreen = sharedPreferences.getBoolean("fullscreen", false)
+        if (isFullscreen) {
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        } else {
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         }
-    }
-
-    private fun showFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit()
     }
 
     override fun onResume() {
         super.onResume()
         updateFullscreenMode()
-    }
-
-    fun updateFullscreenMode() {
-        val sharedPreferences = getSharedPreferences("TasbeehSettings", 0)
-        if (sharedPreferences.getBoolean("fullscreen", false)) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-        }
     }
 }

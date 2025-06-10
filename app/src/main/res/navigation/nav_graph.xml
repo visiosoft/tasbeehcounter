@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navigation_tasbeeh">
+
+    <fragment
+        android:id="@+id/navigation_tasbeeh"
+        android:name="com.example.tasbeehcounter.TasbeehFragment"
+        android:label="Tasbeeh" />
+
+    <fragment
+        android:id="@+id/navigation_qibla"
+        android:name="com.example.tasbeehcounter.QiblaFragment"
+        android:label="Qibla" />
+
+    <fragment
+        android:id="@+id/navigation_namaz"
+        android:name="com.example.tasbeehcounter.NamazFragment"
+        android:label="Namaz" />
+
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="com.example.tasbeehcounter.SettingsFragment"
+        android:label="Settings" />
+
+</navigation> 

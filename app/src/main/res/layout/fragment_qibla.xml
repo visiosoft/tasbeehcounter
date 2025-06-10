@@ -6,23 +6,22 @@
     android:padding="16dp">
 
     <TextView
-        android:id="@+id/qiblaDirectionText"
+        android:id="@+id/directionText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Qibla Direction: 0°"
         android:textSize="18sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <ImageView
         android:id="@+id/compassImage"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
         android:src="@drawable/ic_compass"
-        app:layout_constraintTop_toBottomOf="@id/qiblaDirectionText"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toBottomOf="@id/directionText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -30,10 +29,12 @@
         android:id="@+id/instructionsText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hold your phone flat and rotate until the compass points to the Qibla direction"
-        android:textAlignment="center"
+        android:text="Hold your phone flat and rotate until the red arrow points to Qibla"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginTop="32dp"
         android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/compassImage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

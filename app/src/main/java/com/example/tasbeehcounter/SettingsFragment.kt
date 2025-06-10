@@ -1,5 +1,6 @@
 package com.example.tasbeehcounter
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
@@ -14,6 +15,7 @@ import com.example.tasbeehcounter.databinding.FragmentSettingsBinding
 class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreateView(
@@ -27,27 +29,30 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        sharedPreferences = requireContext().getSharedPreferences("TasbeehSettings", 0)
-        
+        setupSharedPreferences()
         setupSwitches()
         setupButtons()
     }
 
+    private fun setupSharedPreferences() {
+        sharedPreferences = requireContext().getSharedPreferences("TasbeehSettings", Context.MODE_PRIVATE)
+    }
+
     private fun setupSwitches() {
-        // Full Screen Switch
-        binding.switchFullscreen.isChecked = sharedPreferences.getBoolean("fullscreen", false)
-        binding.switchFullscreen.setOnCheckedChangeListener { _, isChecked ->
+        // Fullscreen switch
+        binding.fullscreenSwitch.isChecked = sharedPreferences.getBoolean("fullscreen", false)
+        binding.fullscreenSwitch.setOnCheckedChangeListener { _, isChecked ->
             sharedPreferences.edit().putBoolean("fullscreen", isChecked).apply()
+            (requireActivity() as MainActivity).updateFullscreenMode()
         }
 
-        // Vibration Switch
-        binding.switchVibration.isChecked = sharedPreferences.getBoolean("vibration", true)
+        // Vibration switch
+        binding.switchVibration.isChecked = sharedPreferences.getBoolean("vibration", false)
         binding.switchVibration.setOnCheckedChangeListener { _, isChecked ->
             sharedPreferences.edit().putBoolean("vibration", isChecked).apply()
         }
 
-        // Dark Mode Switch
+        // Dark mode switch
         binding.switchDarkMode.isChecked = sharedPreferences.getBoolean("dark_mode", false)
         binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
             sharedPreferences.edit().putBoolean("dark_mode", isChecked).apply()
