@@ -1,6 +1,7 @@
 package com.example.tasbeehcounter
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -18,8 +19,8 @@ class TasbeehFragment : Fragment() {
 
     private var count = 0
     private var isCounting = false
-    private var isVibrationEnabled = true
     private lateinit var vibrator: Vibrator
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,18 +34,32 @@ class TasbeehFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupVibrator()
+        setupSharedPreferences()
         setupClickListeners()
+        updateFullscreenMode()
 
         // Enable tap anywhere to count
         binding.root.setOnClickListener {
             if (isCounting) {
                 count++
                 binding.counterText.text = count.toString()
-                if (isVibrationEnabled) {
+                if (isVibrationEnabled()) {
                     vibrate(50)
                 }
             }
         }
+    }
+
+    private fun setupSharedPreferences() {
+        sharedPreferences = requireContext().getSharedPreferences("TasbeehSettings", 0)
+    }
+
+    private fun isVibrationEnabled(): Boolean {
+        return sharedPreferences.getBoolean("vibration", true)
+    }
+
+    private fun updateFullscreenMode() {
+        (requireActivity() as MainActivity).updateFullscreenMode()
     }
 
     private fun setupVibrator() {
@@ -56,7 +71,7 @@ class TasbeehFragment : Fragment() {
             if (isCounting) {
                 count++
                 binding.counterText.text = count.toString()
-                if (isVibrationEnabled) {
+                if (isVibrationEnabled()) {
                     vibrate(50)
                 }
             }
@@ -65,7 +80,7 @@ class TasbeehFragment : Fragment() {
         binding.resetButton.setOnClickListener {
             count = 0
             binding.counterText.text = "0"
-            if (isVibrationEnabled) {
+            if (isVibrationEnabled()) {
                 vibrate(100)
             }
         }
@@ -73,7 +88,7 @@ class TasbeehFragment : Fragment() {
         binding.startStopButton.setOnClickListener {
             isCounting = !isCounting
             binding.startStopButton.text = if (isCounting) "Stop" else "Start"
-            if (isVibrationEnabled) {
+            if (isVibrationEnabled()) {
                 vibrate(150)
             }
         }
@@ -89,17 +104,6 @@ class TasbeehFragment : Fragment() {
                 binding.startStopButton.text = "Start"
             }
         }
-
-        binding.vibrationToggleButton.setOnClickListener {
-            isVibrationEnabled = !isVibrationEnabled
-            binding.vibrationToggleButton.setIconResource(
-                if (isVibrationEnabled) android.R.drawable.ic_lock_silent_mode_off
-                else android.R.drawable.ic_lock_silent_mode
-            )
-            if (isVibrationEnabled) {
-                vibrate(50)
-            }
-        }
     }
 
     private fun vibrate(duration: Long) {
@@ -109,6 +113,11 @@ class TasbeehFragment : Fragment() {
             @Suppress("DEPRECATION")
             vibrator.vibrate(duration)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateFullscreenMode()
     }
 
     override fun onDestroyView() {
