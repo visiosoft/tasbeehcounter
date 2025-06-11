@@ -5,6 +5,10 @@
         android:icon="@drawable/ic_tasbeeh"
         android:title="Tasbeeh" />
     <item
+        android:id="@+id/navigation_dhikr_list"
+        android:icon="@drawable/ic_dhikr"
+        android:title="Daily Dhikr" />
+    <item
         android:id="@+id/navigation_namaz"
         android:icon="@drawable/ic_namaz"
         android:title="Namaz" />
@@ -12,8 +16,4 @@
         android:id="@+id/navigation_settings"
         android:icon="@drawable/ic_settings"
         android:title="Settings" />
-    <item
-        android:id="@+id/navigation_dhikr_list"
-        android:icon="@drawable/ic_dhikr"
-        android:title="Daily Dhikr" />
 </menu> 

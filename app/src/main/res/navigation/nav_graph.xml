@@ -11,6 +11,12 @@
         android:label="Tasbeeh" />
 
     <fragment
+        android:id="@+id/navigation_dhikr_list"
+        android:name="com.example.tasbeehcounter.DhikrListFragment"
+        android:label="Daily Dhikr"
+        tools:layout="@layout/fragment_dhikr_list" />
+
+    <fragment
         android:id="@+id/navigation_namaz"
         android:name="com.example.tasbeehcounter.NamazFragment"
         android:label="Namaz" />
@@ -19,11 +25,5 @@
         android:id="@+id/navigation_settings"
         android:name="com.example.tasbeehcounter.SettingsFragment"
         android:label="Settings" />
-
-    <fragment
-        android:id="@+id/navigation_dhikr_list"
-        android:name="com.example.tasbeehcounter.DhikrListFragment"
-        android:label="Daily Dhikr"
-        tools:layout="@layout/fragment_dhikr_list" />
 
 </navigation> 

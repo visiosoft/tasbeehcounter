@@ -10,10 +10,13 @@ import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.core.view.GestureDetectorCompat
 import androidx.fragment.app.Fragment
+import android.view.GestureDetector
 import com.example.tasbeehcounter.databinding.FragmentTasbeehBinding
 
 class TasbeehFragment : Fragment() {
@@ -25,6 +28,7 @@ class TasbeehFragment : Fragment() {
     private lateinit var vibrator: Vibrator
     private val handler = Handler(Looper.getMainLooper())
     private var currentQuoteIndex = 0
+    private lateinit var gestureDetector: GestureDetectorCompat
 
     private val quotes = listOf(
         IslamicQuote(
@@ -106,6 +110,8 @@ class TasbeehFragment : Fragment() {
         setupSharedPreferences()
         setupVibrator()
         setupCounter()
+        setupQuoteNavigation()
+        setupGestureDetector()
         updateUI()
         updateStartStopButton()
         showNextQuote()
@@ -165,10 +171,31 @@ class TasbeehFragment : Fragment() {
         binding.startStopButton.text = if (isCounting) "Stop" else "Start"
     }
 
-    private fun showNextQuote() {
-        val quote = quotes[currentQuoteIndex]
-        currentQuoteIndex = (currentQuoteIndex + 1) % quotes.size
+    private fun setupQuoteNavigation() {
+        binding.prevQuoteButton.setOnClickListener {
+            showPreviousQuote()
+        }
 
+        binding.nextQuoteButton.setOnClickListener {
+            showNextQuote()
+        }
+    }
+
+    private fun showPreviousQuote() {
+        currentQuoteIndex = if (currentQuoteIndex > 0) {
+            currentQuoteIndex - 1
+        } else {
+            quotes.size - 1
+        }
+        updateQuoteWithAnimation()
+    }
+
+    private fun showNextQuote() {
+        currentQuoteIndex = (currentQuoteIndex + 1) % quotes.size
+        updateQuoteWithAnimation()
+    }
+
+    private fun updateQuoteWithAnimation() {
         // Fade out
         val fadeOut = ObjectAnimator.ofFloat(binding.quoteCard, "alpha", 1f, 0f)
         fadeOut.duration = 500
@@ -178,6 +205,7 @@ class TasbeehFragment : Fragment() {
         // Update text and fade in
         fadeOut.addListener(object : android.animation.AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: android.animation.Animator) {
+                val quote = quotes[currentQuoteIndex]
                 binding.quoteText.text = quote.text
                 binding.quoteArabicText.text = quote.arabicText
                 binding.quoteUrduText.text = quote.urduText
@@ -193,6 +221,41 @@ class TasbeehFragment : Fragment() {
 
     private fun startQuoteRotation() {
         handler.postDelayed(quoteRunnable, 30000) // Start first rotation after 30 seconds
+    }
+
+    private fun setupGestureDetector() {
+        gestureDetector = GestureDetectorCompat(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                
+                // Check if the swipe is horizontal and has enough velocity
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 100) {
+                    if (diffX > 0) {
+                        // Swipe right - show previous quote
+                        showPreviousQuote()
+                    } else {
+                        // Swipe left - show next quote
+                        showNextQuote()
+                    }
+                    return true
+                }
+                return false
+            }
+        })
+
+        // Set up touch listener for the quote card
+        binding.quoteCard.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            true
+        }
     }
 
     override fun onResume() {
