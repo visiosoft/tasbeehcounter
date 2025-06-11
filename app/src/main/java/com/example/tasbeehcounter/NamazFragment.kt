@@ -199,31 +199,73 @@ class NamazFragment : Fragment() {
     private fun getCityNameFromLocation(location: Location) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}"
+                // Round coordinates to 2 decimal places for a wider area search
+                val roundedLat = Math.round(location.latitude * 100.0) / 100.0
+                val roundedLon = Math.round(location.longitude * 100.0) / 100.0
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$roundedLat&lon=$roundedLon&accept-language=en&zoom=10"
                 val response = URL(url).readText()
                 val json = JSONObject(response)
                 val address = json.getJSONObject("address")
                 val city = address.optString("city") ?: address.optString("town") ?: address.optString("village")
                 val state = address.optString("state", "")
-                val country = address.optString("country", "")
+                val province = address.optString("county", "")
                 
                 withContext(Dispatchers.Main) {
                     currentCityName = city
-                    val locationText = if (state.isNotEmpty()) {
-                        "$city, $state"
-                    } else {
-                        city
+                    val locationText = when {
+                        city.isNotEmpty() && province.isNotEmpty() -> "$city, $province"
+                        city.isNotEmpty() && state.isNotEmpty() -> "$city, $state"
+                        city.isNotEmpty() -> city
+                        state.isNotEmpty() -> state
+                        else -> getDefaultMainCity()
                     }
-                    updateLocationText("Current Location: $locationText")
+                    updateLocationText(locationText)
                     showLocationNotification("Location Updated", "Prayer times updated for $locationText")
                     updatePrayerTimes()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    updateLocationText("Current Location")
+                    updateLocationText(getDefaultMainCity())
                     updatePrayerTimes()
                 }
             }
+        }
+    }
+
+    private fun getDefaultMainCity(): String {
+        // Get the timezone to determine the region
+        val timeZone = TimeZone.getDefault()
+        val timeZoneId = timeZone.id.lowercase()
+        
+        return when {
+            timeZoneId.contains("asia") -> {
+                when {
+                    timeZoneId.contains("karachi") -> "Karachi, Sindh"
+                    timeZoneId.contains("lahore") -> "Lahore, Punjab"
+                    timeZoneId.contains("islamabad") -> "Islamabad"
+                    timeZoneId.contains("dubai") -> "Dubai, UAE"
+                    timeZoneId.contains("riyadh") -> "Riyadh, Saudi Arabia"
+                    timeZoneId.contains("istanbul") -> "Istanbul, Turkey"
+                    else -> "Mecca, Saudi Arabia"
+                }
+            }
+            timeZoneId.contains("europe") -> {
+                when {
+                    timeZoneId.contains("london") -> "London, UK"
+                    timeZoneId.contains("paris") -> "Paris, France"
+                    timeZoneId.contains("berlin") -> "Berlin, Germany"
+                    else -> "London, UK"
+                }
+            }
+            timeZoneId.contains("america") -> {
+                when {
+                    timeZoneId.contains("new_york") -> "New York, USA"
+                    timeZoneId.contains("los_angeles") -> "Los Angeles, USA"
+                    timeZoneId.contains("chicago") -> "Chicago, USA"
+                    else -> "New York, USA"
+                }
+            }
+            else -> "Mecca, Saudi Arabia" // Default to Mecca if no specific region is detected
         }
     }
 
