@@ -30,32 +30,26 @@ class MainActivity : AppCompatActivity() {
         binding.navView.setupWithNavController(navController)
 
         // Set default values if not set
-        if (!sharedPreferences.contains("fullscreen")) {
-            sharedPreferences.edit().putBoolean("fullscreen", false).apply()
-        }
         if (!sharedPreferences.contains("vibration")) {
             sharedPreferences.edit().putBoolean("vibration", false).apply()
         }
         if (!sharedPreferences.contains("dark_mode")) {
             sharedPreferences.edit().putBoolean("dark_mode", false).apply()
         }
-    }
 
-    fun updateFullscreenMode() {
-        val isFullscreen = sharedPreferences.getBoolean("fullscreen", false)
-        if (isFullscreen) {
-            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
-            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        } else {
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        }
+        // Always enable fullscreen mode
+        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
     }
 
     override fun onResume() {
         super.onResume()
-        updateFullscreenMode()
+        // Re-enable fullscreen mode when activity resumes
+        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
     }
 }

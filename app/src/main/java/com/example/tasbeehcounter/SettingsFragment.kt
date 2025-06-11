@@ -1,8 +1,6 @@
 package com.example.tasbeehcounter
 
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,12 +9,18 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import com.example.tasbeehcounter.databinding.FragmentSettingsBinding
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var vibrationSwitch: SwitchMaterial
+    private lateinit var soundSwitch: SwitchMaterial
+    private lateinit var autoResetSwitch: SwitchMaterial
+    private lateinit var darkModeSwitch: SwitchMaterial
+    private lateinit var notificationSwitch: SwitchMaterial
+    private lateinit var autoLocationSwitch: SwitchMaterial
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -29,44 +33,69 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupSharedPreferences()
-        setupSwitches()
-        setupButtons()
+        initializeSwitches()
+        setupListeners()
     }
 
-    private fun setupSharedPreferences() {
-        sharedPreferences = requireContext().getSharedPreferences("TasbeehSettings", Context.MODE_PRIVATE)
+    private fun initializeSwitches() {
+        vibrationSwitch = binding.vibrationSwitch
+        soundSwitch = binding.soundSwitch
+        autoResetSwitch = binding.autoResetSwitch
+        darkModeSwitch = binding.darkModeSwitch
+        notificationSwitch = binding.notificationSwitch
+        autoLocationSwitch = binding.autoLocationSwitch
+
+        // Load saved preferences
+        val prefs = requireContext().getSharedPreferences("Settings", 0)
+        vibrationSwitch.isChecked = prefs.getBoolean("vibration", true)
+        soundSwitch.isChecked = prefs.getBoolean("sound", true)
+        autoResetSwitch.isChecked = prefs.getBoolean("autoReset", false)
+        darkModeSwitch.isChecked = prefs.getBoolean("darkMode", false)
+        notificationSwitch.isChecked = prefs.getBoolean("notifications", true)
+        autoLocationSwitch.isChecked = prefs.getBoolean("autoLocation", true)
     }
 
-    private fun setupSwitches() {
-        // Fullscreen switch
-        binding.fullscreenSwitch.isChecked = sharedPreferences.getBoolean("fullscreen", false)
-        binding.fullscreenSwitch.setOnCheckedChangeListener { _, isChecked ->
-            sharedPreferences.edit().putBoolean("fullscreen", isChecked).apply()
-            (requireActivity() as MainActivity).updateFullscreenMode()
+    private fun setupListeners() {
+        val prefs = requireContext().getSharedPreferences("Settings", 0)
+        val editor = prefs.edit()
+
+        vibrationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            editor.putBoolean("vibration", isChecked)
+            editor.apply()
         }
 
-        // Vibration switch
-        binding.switchVibration.isChecked = sharedPreferences.getBoolean("vibration", false)
-        binding.switchVibration.setOnCheckedChangeListener { _, isChecked ->
-            sharedPreferences.edit().putBoolean("vibration", isChecked).apply()
+        soundSwitch.setOnCheckedChangeListener { _, isChecked ->
+            editor.putBoolean("sound", isChecked)
+            editor.apply()
         }
 
-        // Dark mode switch
-        binding.switchDarkMode.isChecked = sharedPreferences.getBoolean("dark_mode", false)
-        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
-            sharedPreferences.edit().putBoolean("dark_mode", isChecked).apply()
+        autoResetSwitch.setOnCheckedChangeListener { _, isChecked ->
+            editor.putBoolean("autoReset", isChecked)
+            editor.apply()
+        }
+
+        darkModeSwitch.setOnCheckedChangeListener { _, isChecked ->
+            editor.putBoolean("darkMode", isChecked)
+            editor.apply()
+            // Apply theme change
             if (isChecked) {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             } else {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
             }
         }
-    }
 
-    private fun setupButtons() {
-        // Rate App Button
-        binding.buttonRate.setOnClickListener {
+        notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            editor.putBoolean("notifications", isChecked)
+            editor.apply()
+        }
+
+        autoLocationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            editor.putBoolean("autoLocation", isChecked)
+            editor.apply()
+        }
+
+        binding.rateButton.setOnClickListener {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse("market://details?id=${requireContext().packageName}")
@@ -78,15 +107,16 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        // Share App Button
-        binding.buttonShare.setOnClickListener {
-            val shareIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, "Tasbeeh Counter App")
-                putExtra(Intent.EXTRA_TEXT, "Check out this amazing Tasbeeh Counter app: https://play.google.com/store/apps/details?id=${requireContext().packageName}")
+        binding.feedbackButton.setOnClickListener {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:") // Add your support email here
+                putExtra(Intent.EXTRA_SUBJECT, "Tasbeeh Counter Feedback")
             }
-            startActivity(Intent.createChooser(shareIntent, "Share via"))
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                // Handle case where no email app is available
+            }
         }
     }
 

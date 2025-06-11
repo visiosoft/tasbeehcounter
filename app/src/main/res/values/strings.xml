@@ -1,8 +1,9 @@
 <resources>
-    <string name="app_name">tasbeeh counter</string>
+    <string name="app_name">Tasbeeh Counter</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="tasbeeh_counter_title">Tasbeeh Counter</string>
     
     <!-- Added missing strings for prayer times -->
     <string name="current_location">Current Location</string>

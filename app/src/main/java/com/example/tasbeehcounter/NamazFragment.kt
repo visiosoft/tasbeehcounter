@@ -1,14 +1,19 @@
 package com.example.tasbeehcounter
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.batoulapps.adhan.CalculationMethod
@@ -37,8 +42,8 @@ class NamazFragment : Fragment() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var currentLocation: Location? = null
     private var prayerTimes: PrayerTimes? = null
-    private var isUsingManualLocation = false
     private var currentCityName: String? = null
+    private lateinit var notificationManager: NotificationManager
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -47,13 +52,16 @@ class NamazFragment : Fragment() {
             permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
                 // Precise location access granted
                 getCurrentLocation()
+                showLocationNotification("Location access granted", "Getting your current location...")
             }
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
                 // Only approximate location access granted
                 getCurrentLocation()
+                showLocationNotification("Location access granted", "Getting your current location...")
             }
             else -> {
                 // No location access granted
+                showLocationNotification("Location access required", "Please grant location permission for accurate prayer times")
                 Toast.makeText(context, "Location permission is required for accurate prayer times", Toast.LENGTH_LONG).show()
             }
         }
@@ -70,19 +78,47 @@ class NamazFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupNotificationChannel()
         setupLocationServices()
         setupUI()
         // Automatically check location permission on start
         checkLocationPermission()
     }
 
+    private fun setupNotificationChannel() {
+        notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "location_channel",
+                "Location Updates",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications for location updates"
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showLocationNotification(title: String, message: String) {
+        val notification = NotificationCompat.Builder(requireContext(), "location_channel")
+            .setSmallIcon(R.drawable.ic_location)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(1, notification)
+    }
+
     private fun setupUI() {
         binding.locationButton.setOnClickListener {
-            // Only show manual input if GPS is not available
             if (!isLocationPermissionGranted()) {
-                showManualLocationDialog()
+                requestLocationPermission()
             } else {
                 getCurrentLocation()
+                showLocationNotification("Updating Location", "Getting your current location...")
             }
         }
     }
@@ -104,14 +140,18 @@ class NamazFragment : Fragment() {
                 getCurrentLocation()
             }
             else -> {
-                locationPermissionRequest.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                )
+                requestLocationPermission()
             }
         }
+    }
+
+    private fun requestLocationPermission() {
+        locationPermissionRequest.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
     private fun getCurrentLocation() {
@@ -120,7 +160,6 @@ class NamazFragment : Fragment() {
                 .addOnSuccessListener { location: Location? ->
                     location?.let {
                         currentLocation = it
-                        isUsingManualLocation = false
                         getCityNameFromLocation(it)
                     } ?: run {
                         // If location is null, try to get last known location
@@ -132,7 +171,7 @@ class NamazFragment : Fragment() {
                     getLastKnownLocation()
                 }
         } catch (e: SecurityException) {
-            showManualLocationDialog()
+            requestLocationPermission()
         }
     }
 
@@ -142,17 +181,18 @@ class NamazFragment : Fragment() {
                 .addOnSuccessListener { location: Location? ->
                     location?.let {
                         currentLocation = it
-                        isUsingManualLocation = false
                         getCityNameFromLocation(it)
                     } ?: run {
-                        showManualLocationDialog()
+                        showLocationNotification("Location Error", "Unable to get location. Please check your GPS settings.")
+                        Toast.makeText(context, "Unable to get location. Please check your GPS settings.", Toast.LENGTH_LONG).show()
                     }
                 }
                 .addOnFailureListener {
-                    showManualLocationDialog()
+                    showLocationNotification("Location Error", "Unable to get location. Please check your GPS settings.")
+                    Toast.makeText(context, "Unable to get location. Please check your GPS settings.", Toast.LENGTH_LONG).show()
                 }
         } catch (e: SecurityException) {
-            showManualLocationDialog()
+            requestLocationPermission()
         }
     }
 
@@ -164,93 +204,24 @@ class NamazFragment : Fragment() {
                 val json = JSONObject(response)
                 val address = json.getJSONObject("address")
                 val city = address.optString("city") ?: address.optString("town") ?: address.optString("village")
+                val state = address.optString("state", "")
+                val country = address.optString("country", "")
                 
                 withContext(Dispatchers.Main) {
                     currentCityName = city
-                    updateLocationText("Current Location: $city")
+                    val locationText = if (state.isNotEmpty()) {
+                        "$city, $state"
+                    } else {
+                        city
+                    }
+                    updateLocationText("Current Location: $locationText")
+                    showLocationNotification("Location Updated", "Prayer times updated for $locationText")
                     updatePrayerTimes()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     updateLocationText("Current Location")
                     updatePrayerTimes()
-                }
-            }
-        }
-    }
-
-    private fun showManualLocationDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_location_input, null)
-        val cityInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.cityInput)
-        val searchButton = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.searchButton)
-        val latitudeInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.latitudeInput)
-        val longitudeInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.longitudeInput)
-
-        val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Enter Location")
-            .setView(dialogView)
-            .setPositiveButton("OK") { _, _ ->
-                try {
-                    val latitude = latitudeInput.text.toString().toDouble()
-                    val longitude = longitudeInput.text.toString().toDouble()
-                    if (latitude in -90.0..90.0 && longitude in -180.0..180.0) {
-                        currentLocation = Location("manual").apply {
-                            this.latitude = latitude
-                            this.longitude = longitude
-                        }
-                        isUsingManualLocation = true
-                        currentCityName = cityInput.text.toString()
-                        updateLocationText("Manual Location: ${currentCityName ?: "Custom Location"}")
-                        updatePrayerTimes()
-                    } else {
-                        Toast.makeText(context, "Invalid coordinates", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: NumberFormatException) {
-                    Toast.makeText(context, "Please enter valid numbers", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        searchButton.setOnClickListener {
-            val cityName = cityInput.text.toString()
-            if (cityName.isNotEmpty()) {
-                searchCity(cityName) { lat, lon ->
-                    latitudeInput.setText(lat.toString())
-                    longitudeInput.setText(lon.toString())
-                }
-            } else {
-                Toast.makeText(context, "Please enter a city name", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun searchCity(cityName: String, onResult: (Double, Double) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val encodedCity = java.net.URLEncoder.encode(cityName, "UTF-8")
-                val url = "https://nominatim.openstreetmap.org/search?format=json&q=$encodedCity"
-                val response = URL(url).readText()
-                val jsonArray = org.json.JSONArray(response)
-                
-                if (jsonArray.length() > 0) {
-                    val firstResult = jsonArray.getJSONObject(0)
-                    val lat = firstResult.getDouble("lat")
-                    val lon = firstResult.getDouble("lon")
-                    
-                    withContext(Dispatchers.Main) {
-                        onResult(lat, lon)
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "City not found", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error searching city: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }

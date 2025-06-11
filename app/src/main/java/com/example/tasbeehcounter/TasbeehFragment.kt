@@ -63,7 +63,7 @@ class TasbeehFragment : Fragment() {
 
         // Handle fullscreen tap
         binding.root.setOnClickListener {
-            if (sharedPreferences.getBoolean("fullscreen", false) && isCounting) {
+            if (isCounting) {
                 incrementCount()
             }
         }
@@ -84,7 +84,7 @@ class TasbeehFragment : Fragment() {
 
     private fun updateUI() {
         binding.counterText.text = count.toString()
-        binding.counterButton.visibility = if (sharedPreferences.getBoolean("fullscreen", false)) View.GONE else View.VISIBLE
+        binding.counterButton.visibility = View.GONE // Always hide the counter button in fullscreen mode
     }
 
     private fun updateStartStopButton() {

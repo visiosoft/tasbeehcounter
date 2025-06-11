@@ -5,10 +5,6 @@
         android:icon="@drawable/ic_tasbeeh"
         android:title="Tasbeeh" />
     <item
-        android:id="@+id/navigation_qibla"
-        android:icon="@drawable/ic_qibla"
-        android:title="Qibla" />
-    <item
         android:id="@+id/navigation_namaz"
         android:icon="@drawable/ic_namaz"
         android:title="Namaz" />
