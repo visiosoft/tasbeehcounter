@@ -1,14 +1,18 @@
 package com.example.tasbeehcounter
 
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.fragment.app.Fragment
 import com.example.tasbeehcounter.databinding.FragmentTasbeehBinding
 
@@ -19,6 +23,74 @@ class TasbeehFragment : Fragment() {
     private var isCounting = false
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var vibrator: Vibrator
+    private val handler = Handler(Looper.getMainLooper())
+    private var currentQuoteIndex = 0
+
+    private val quotes = listOf(
+        IslamicQuote(
+            "Verily, with hardship comes ease.",
+            "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
+            "بےشک مشکل کے ساتھ آسانی ہے",
+            "Quran 94:5",
+            false
+        ),
+        IslamicQuote(
+            "Indeed, Allah is with those who are patient.",
+            "إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",
+            "بےشک اللہ صبر کرنے والوں کے ساتھ ہے",
+            "Quran 2:153",
+            false
+        ),
+        IslamicQuote(
+            "The best among you are those who have the best manners and character.",
+            "إِنَّ مِنْ خِيَارِكُمْ أَحْسَنَكُمْ أَخْلَاقًا",
+            "تم میں سے بہترین وہ ہیں جو اخلاق میں بہترین ہیں",
+            "Sahih al-Bukhari",
+            true
+        ),
+        IslamicQuote(
+            "Whoever believes in Allah and the Last Day, let him speak good or remain silent.",
+            "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
+            "جو اللہ اور آخرت پر ایمان رکھتا ہے وہ اچھی بات کہے یا خاموش رہے",
+            "Sahih al-Bukhari",
+            true
+        ),
+        IslamicQuote(
+            "Allah does not burden a soul beyond that it can bear.",
+            "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
+            "اللہ کسی جان پر اس کی طاقت سے زیادہ بوجھ نہیں ڈالتا",
+            "Quran 2:286",
+            false
+        ),
+        IslamicQuote(
+            "The most beloved of people to Allah are those who are most beneficial to people.",
+            "أَحَبُّ النَّاسِ إِلَى اللَّهِ أَنْفَعُهُمْ لِلنَّاسِ",
+            "اللہ کے نزدیک سب سے محبوب وہ شخص ہے جو لوگوں کو سب سے زیادہ فائدہ پہنچائے",
+            "Sahih al-Jami",
+            true
+        ),
+        IslamicQuote(
+            "And We have certainly created man in the best of stature.",
+            "لَقَدْ خَلَقْنَا الْإِنْسَانَ فِي أَحْسَنِ تَقْوِيمٍ",
+            "بےشک ہم نے انسان کو بہترین ساخت میں پیدا کیا",
+            "Quran 95:4",
+            false
+        ),
+        IslamicQuote(
+            "The strong person is not the one who can wrestle someone else down. The strong person is the one who can control himself when he is angry.",
+            "لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الْغَضَبِ",
+            "طاقتور وہ نہیں جو کسی کو پچھاڑ دے، بلکہ طاقتور وہ ہے جو غصے میں اپنے آپ پر قابو رکھے",
+            "Sahih al-Bukhari",
+            true
+        )
+    )
+
+    private val quoteRunnable = object : Runnable {
+        override fun run() {
+            showNextQuote()
+            handler.postDelayed(this, 30000) // 30 seconds
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,6 +108,8 @@ class TasbeehFragment : Fragment() {
         setupCounter()
         updateUI()
         updateStartStopButton()
+        showNextQuote()
+        startQuoteRotation()
     }
 
     private fun setupSharedPreferences() {
@@ -91,13 +165,49 @@ class TasbeehFragment : Fragment() {
         binding.startStopButton.text = if (isCounting) "Stop" else "Start"
     }
 
+    private fun showNextQuote() {
+        val quote = quotes[currentQuoteIndex]
+        currentQuoteIndex = (currentQuoteIndex + 1) % quotes.size
+
+        // Fade out
+        val fadeOut = ObjectAnimator.ofFloat(binding.quoteCard, "alpha", 1f, 0f)
+        fadeOut.duration = 500
+        fadeOut.interpolator = AccelerateDecelerateInterpolator()
+        fadeOut.start()
+
+        // Update text and fade in
+        fadeOut.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                binding.quoteText.text = quote.text
+                binding.quoteArabicText.text = quote.arabicText
+                binding.quoteUrduText.text = quote.urduText
+                binding.quoteSource.text = if (quote.isHadith) "Hadith - ${quote.source}" else "Quran - ${quote.source}"
+                
+                val fadeIn = ObjectAnimator.ofFloat(binding.quoteCard, "alpha", 0f, 1f)
+                fadeIn.duration = 500
+                fadeIn.interpolator = AccelerateDecelerateInterpolator()
+                fadeIn.start()
+            }
+        })
+    }
+
+    private fun startQuoteRotation() {
+        handler.postDelayed(quoteRunnable, 30000) // Start first rotation after 30 seconds
+    }
+
     override fun onResume() {
         super.onResume()
         updateUI()
     }
 
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(quoteRunnable)
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        handler.removeCallbacks(quoteRunnable)
         _binding = null
     }
 } 

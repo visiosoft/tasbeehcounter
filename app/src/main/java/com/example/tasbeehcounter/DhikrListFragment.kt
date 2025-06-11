@@ -32,7 +32,13 @@ class DhikrListFragment : Fragment() {
             Dhikr("سُبْحَانَ اللَّهِ", "Glory be to Allah", 33),
             Dhikr("الْحَمْدُ لِلَّهِ", "All praise is due to Allah", 33),
             Dhikr("اللَّهُ أَكْبَرُ", "Allah is the Greatest", 33),
-            Dhikr("لَا إِلَٰهَ إِلَّا اللَّهُ", "There is no god but Allah", 100)
+            Dhikr("لَا إِلَٰهَ إِلَّا اللَّهُ", "There is no god but Allah", 100),
+            Dhikr("أَسْتَغْفِرُ اللَّهَ", "I seek forgiveness from Allah", 100),
+            Dhikr("سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "Glory be to Allah and His is the praise", 100),
+            Dhikr("سُبْحَانَ اللَّهِ الْعَظِيمِ", "Glory be to Allah, the Most Great", 100),
+            Dhikr("لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", "There is no power and no strength except with Allah", 100),
+            Dhikr("اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", "O Allah, send prayers upon Muhammad", 100),
+            Dhikr("سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ", "Glory be to Allah, and praise be to Allah, and there is no god but Allah, and Allah is the Greatest", 33)
         )
 
         adapter = DhikrAdapter(dhikrList)
