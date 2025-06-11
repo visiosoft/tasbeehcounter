@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
     app:startDestination="@id/navigation_tasbeeh">
 
@@ -18,5 +19,11 @@
         android:id="@+id/navigation_settings"
         android:name="com.example.tasbeehcounter.SettingsFragment"
         android:label="Settings" />
+
+    <fragment
+        android:id="@+id/navigation_dhikr_list"
+        android:name="com.example.tasbeehcounter.DhikrListFragment"
+        android:label="Daily Dhikr"
+        tools:layout="@layout/fragment_dhikr_list" />
 
 </navigation> 
