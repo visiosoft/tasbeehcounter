@@ -18,6 +18,14 @@ import androidx.core.view.GestureDetectorCompat
 import androidx.fragment.app.Fragment
 import android.view.GestureDetector
 import com.example.tasbeehcounter.databinding.FragmentTasbeehBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.text.SimpleDateFormat
+import java.util.*
+import android.app.Dialog
+import android.widget.TextView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import android.widget.ImageButton
 
 class TasbeehFragment : Fragment() {
     private var _binding: FragmentTasbeehBinding? = null
@@ -112,6 +120,7 @@ class TasbeehFragment : Fragment() {
         setupCounter()
         setupQuoteNavigation()
         setupGestureDetector()
+        setupSaveButton()
         updateUI()
         updateStartStopButton()
         showNextQuote()
@@ -255,6 +264,159 @@ class TasbeehFragment : Fragment() {
         binding.quoteCard.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             true
+        }
+    }
+
+    private fun setupSaveButton() {
+        binding.saveButton.setOnClickListener {
+            saveCount()
+            showHistory()
+        }
+    }
+
+    private fun saveCount() {
+        if (count > 0) {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val currentDate = dateFormat.format(Date())
+            
+            // Get existing saved counts
+            val savedCounts = sharedPreferences.getString("saved_counts", "[]") ?: "[]"
+            val countsList = savedCounts.split(",").filter { it.isNotEmpty() }.toMutableList()
+            
+            // Add new count
+            val newCount = "$count|$currentDate"
+            countsList.add(newCount)
+            
+            // Save updated list
+            sharedPreferences.edit().putString("saved_counts", countsList.joinToString(",")).apply()
+            
+            // Show confirmation
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Count Saved")
+                .setMessage("Today's count of $count has been saved successfully.")
+                .setPositiveButton("OK", null)
+                .show()
+        } else {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("No Count to Save")
+                .setMessage("Please count some Tasbeeh before saving.")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+    private fun showHistory() {
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.dialog_history)
+        
+        // Set dialog width to 90% of screen width
+        val width = (resources.displayMetrics.widthPixels * 0.9).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        
+        val todayCount = dialog.findViewById<TextView>(R.id.todayCount)
+        val yesterdayCount = dialog.findViewById<TextView>(R.id.yesterdayCount)
+        val historyRecyclerView = dialog.findViewById<RecyclerView>(R.id.historyRecyclerView)
+        
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val today = dateFormat.format(Date())
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, -1)
+        val yesterday = dateFormat.format(calendar.time)
+        
+        var todayTotal = 0
+        var yesterdayTotal = 0
+        val last7Days = mutableListOf<Pair<Date, Int>>()
+        
+        // Get saved counts
+        val savedCounts = sharedPreferences.getString("saved_counts", "[]") ?: "[]"
+        val countsList = savedCounts.split(",").filter { it.isNotEmpty() }
+        
+        // Process counts
+        countsList.forEach { countString ->
+            val parts = countString.split("|")
+            if (parts.size >= 2) {
+                val count = parts[0].toIntOrNull() ?: 0
+                val date = dateFormat.parse(parts[1])
+                
+                if (date != null) {
+                    val dateStr = dateFormat.format(date)
+                    when (dateStr) {
+                        today -> todayTotal += count
+                        yesterday -> yesterdayTotal += count
+                    }
+                    
+                    // Add to last 7 days if within range
+                    val daysDiff = ((Date().time - date.time) / (1000 * 60 * 60 * 24)).toInt()
+                    if (daysDiff < 7) {
+                        last7Days.add(Pair(date, count))
+                    }
+                }
+            }
+        }
+        
+        // Update UI
+        todayCount.text = todayTotal.toString()
+        yesterdayCount.text = yesterdayTotal.toString()
+        
+        // Setup RecyclerView with last 7 days
+        val last7DaysList = getLast7DaysWithCounts(last7Days)
+        historyRecyclerView.layoutManager = LinearLayoutManager(context)
+        historyRecyclerView.adapter = HistoryAdapter(last7DaysList)
+        
+        dialog.show()
+    }
+
+    private fun getLast7DaysWithCounts(savedCounts: List<Pair<Date, Int>>): List<Pair<Date, Int>> {
+        val calendar = Calendar.getInstance()
+        val result = mutableListOf<Pair<Date, Int>>()
+        
+        // Generate last 7 days including today
+        for (i in 0..6) {
+            calendar.time = Date()
+            calendar.add(Calendar.DAY_OF_YEAR, -i)
+            val date = calendar.time
+            
+            // Find count for this date
+            val count = savedCounts.find { 
+                val savedDate = it.first
+                val savedCalendar = Calendar.getInstance().apply { time = savedDate }
+                savedCalendar.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
+                savedCalendar.get(Calendar.DAY_OF_YEAR) == calendar.get(Calendar.DAY_OF_YEAR)
+            }?.second ?: 0
+            
+            result.add(Pair(date, count))
+        }
+        
+        return result
+    }
+
+    private inner class HistoryAdapter(private val counts: List<Pair<Date, Int>>) :
+        RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder>() {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoryViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_history_day, parent, false)
+            return HistoryViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
+            val (date, count) = counts[position]
+            val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+            val dateFormat = SimpleDateFormat("d MMMM", Locale.getDefault())
+            
+            val day = dayFormat.format(date)
+            val dateStr = dateFormat.format(date)
+            
+            holder.dateText.text = "$day, $dateStr"
+            holder.countText.text = count.toString()
+        }
+
+        override fun getItemCount() = counts.size
+
+        inner class HistoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val dateText: TextView = itemView.findViewById(R.id.dateText)
+            val countText: TextView = itemView.findViewById(R.id.countText)
         }
     }
 

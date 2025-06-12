@@ -5,32 +5,34 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#1E1E1E">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
         <TextView
             android:id="@+id/arabicText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textAlignment="center"
-            android:textColor="#2C3E50"
-            android:layout_marginBottom="8dp"/>
+            android:textColor="#FFFFFF"
+            android:fontFamily="serif"
+            android:layout_marginBottom="12dp"/>
 
         <TextView
             android:id="@+id/translationText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textAlignment="center"
-            android:textColor="#7F8C8D"
-            android:layout_marginBottom="16dp"/>
+            android:textColor="#B3FFFFFF"
+            android:layout_marginBottom="20dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -43,31 +45,33 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#2C3E50"/>
+                android:textColor="#FFFFFF"/>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/incrementButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="+"
                     android:textColor="#FFFFFF"
-                    android:backgroundTint="#3498DB"
-                    android:layout_marginEnd="8dp"/>
+                    android:backgroundTint="#4CAF50"
+                    android:layout_marginEnd="8dp"
+                    app:cornerRadius="24dp"/>
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/resetButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Reset"
                     android:textColor="#FFFFFF"
-                    android:backgroundTint="#E74C3C"/>
+                    android:backgroundTint="#F44336"
+                    app:cornerRadius="24dp"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -76,10 +80,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="✓ Completed"
-            android:textColor="#27AE60"
+            android:textColor="#4CAF50"
             android:textStyle="bold"
             android:textAlignment="center"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:visibility="gone"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView> 

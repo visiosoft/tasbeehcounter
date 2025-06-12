@@ -20,4 +20,11 @@
     <string name="dark_mode">Dark Mode</string>
     <string name="sound">Sound</string>
     <string name="vibration">Vibration</string>
+
+    <!-- Added string resources for the history dialog -->
+    <string name="tasbeeh_history">Tasbeeh History</string>
+    <string name="todays_count">Today\'s Count</string>
+    <string name="yesterdays_count">Yesterday\'s Count</string>
+    <string name="last_7_days">Last 7 Days</string>
+    <string name="close">Close</string>
 </resources>

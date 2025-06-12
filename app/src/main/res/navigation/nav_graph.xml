@@ -26,4 +26,10 @@
         android:name="com.example.tasbeehcounter.SettingsFragment"
         android:label="Settings" />
 
+    <fragment
+        android:id="@+id/navigation_history"
+        android:name="com.example.tasbeehcounter.TasbeehHistoryFragment"
+        android:label="History"
+        tools:layout="@layout/fragment_tasbeeh_history" />
+
 </navigation> 
