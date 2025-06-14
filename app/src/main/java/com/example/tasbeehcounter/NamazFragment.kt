@@ -298,9 +298,8 @@ class NamazFragment : Fragment() {
             val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
             val date = Date()
             
-            binding.dateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(date)
+            binding.namazDateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(date)
             binding.fajrTime.text = dateFormat.format(times.fajr)
-            binding.sunriseTime.text = dateFormat.format(times.sunrise)
             binding.dhuhrTime.text = dateFormat.format(times.dhuhr)
             binding.asrTime.text = dateFormat.format(times.asr)
             binding.maghribTime.text = dateFormat.format(times.maghrib)
@@ -309,7 +308,6 @@ class NamazFragment : Fragment() {
             // Show next prayer time
             val nextPrayer = when {
                 date.before(times.fajr) -> "Fajr"
-                date.before(times.sunrise) -> "Sunrise"
                 date.before(times.dhuhr) -> "Dhuhr"
                 date.before(times.asr) -> "Asr"
                 date.before(times.maghrib) -> "Maghrib"
@@ -317,7 +315,7 @@ class NamazFragment : Fragment() {
                 else -> "Fajr (Tomorrow)"
             }
             
-            binding.nextPrayerText.text = "Next Prayer: $nextPrayer"
+            binding.namazNextPrayerText.text = "Next Prayer: $nextPrayer"
         }
     }
 

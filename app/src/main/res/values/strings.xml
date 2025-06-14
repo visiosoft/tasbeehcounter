@@ -30,24 +30,24 @@
 
     <!-- Islamic Quotes Section -->
     <string name="islamic_quotes">Islamic Quotes About Prayer</string>
-    <string name="quote_1">"Verily, the prayer is enjoined on the believers at fixed hours." (Quran 4:103)</string>
-    <string name="quote_2">"The first thing that the people will be called to account for on the Day of Judgment is prayer." (Hadith)</string>
-    <string name="quote_3">"The key to Paradise is prayer, and the key to prayer is purification." (Hadith)</string>
-    <string name="quote_4">"The prayer is the pillar of religion, and whoever abandons it has demolished religion." (Hadith)</string>
-    <string name="quote_5">"The prayer is the light of the believer." (Hadith)</string>
-    <string name="quote_6">"The prayer is the ascension of the believer." (Hadith)</string>
-    <string name="quote_7">"The prayer is the best of deeds." (Hadith)</string>
-    <string name="quote_8">"The prayer is the connection between the servant and his Lord." (Hadith)</string>
+    <string name="quote_1">Verily, the prayer is enjoined on the believers at fixed hours. (Quran 4:103)</string>
+    <string name="quote_2">The first thing that the people will be called to account for on the Day of Judgment is prayer. (Hadith)</string>
+    <string name="quote_3">The key to Paradise is prayer, and the key to prayer is purification. (Hadith)</string>
+    <string name="quote_4">The prayer is the pillar of religion, and whoever abandons it has demolished religion. (Hadith)</string>
+    <string name="quote_5">The prayer is the light of the believer. (Hadith)</string>
+    <string name="quote_6">The prayer is the ascension of the believer. (Hadith)</string>
+    <string name="quote_7">The prayer is the best of deeds. (Hadith)</string>
+    <string name="quote_8">The prayer is the connection between the servant and his Lord. (Hadith)</string>
     
     <!-- Urdu Translations -->
-    <string name="quote_1_urdu">"بے شک نماز مومنوں پر مقررہ اوقات میں فرض ہے۔" (قرآن 4:103)</string>
-    <string name="quote_2_urdu">"قیامت کے دن سب سے پہلے نماز کا حساب ہوگا۔" (حدیث)</string>
-    <string name="quote_3_urdu">"جنت کی کنجی نماز ہے، اور نماز کی کنجی وضو ہے۔" (حدیث)</string>
-    <string name="quote_4_urdu">"نماز دین کا ستون ہے، اور جس نے اسے چھوڑ دیا اس نے دین کو ڈھا دیا۔" (حدیث)</string>
-    <string name="quote_5_urdu">"نماز مومن کی روشنی ہے۔" (حدیث)</string>
-    <string name="quote_6_urdu">"نماز مومن کی معراج ہے۔" (حدیث)</string>
-    <string name="quote_7_urdu">"نماز بہترین عمل ہے۔" (حدیث)</string>
-    <string name="quote_8_urdu">"نماز بندے اور اس کے رب کے درمیان تعلق ہے۔" (حدیث)</string>
+    <string name="quote_1_urdu">بے شک نماز مومنوں پر مقررہ اوقات میں فرض ہے۔ (قرآن 4:103)</string>
+    <string name="quote_2_urdu">قیامت کے دن سب سے پہلے نماز کا حساب ہوگا۔ (حدیث)</string>
+    <string name="quote_3_urdu">جنت کی کنجی نماز ہے، اور نماز کی کنجی وضو ہے۔ (حدیث)</string>
+    <string name="quote_4_urdu">نماز دین کا ستون ہے، اور جس نے اسے چھوڑ دیا اس نے دین کو ڈھا دیا۔ (حدیث)</string>
+    <string name="quote_5_urdu">نماز مومن کی روشنی ہے۔ (حدیث)</string>
+    <string name="quote_6_urdu">نماز مومن کی معراج ہے۔ (حدیث)</string>
+    <string name="quote_7_urdu">نماز بہترین عمل ہے۔ (حدیث)</string>
+    <string name="quote_8_urdu">نماز بندے اور اس کے رب کے درمیان تعلق ہے۔ (حدیث)</string>
     
     <!-- Quote Control -->
     <string name="auto_change_quotes">Auto Change Quotes</string>
