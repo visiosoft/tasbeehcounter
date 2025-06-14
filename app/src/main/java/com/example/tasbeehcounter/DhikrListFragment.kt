@@ -9,10 +9,19 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.content.SharedPreferences
+import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class DhikrListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: DhikrAdapter
+    private lateinit var sharedPreferences: SharedPreferences
+    private val gson = Gson()
+    private var dhikrList = mutableListOf<Dhikr>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -25,34 +34,123 @@ class DhikrListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        sharedPreferences = requireContext().getSharedPreferences("DhikrPrefs", Context.MODE_PRIVATE)
+        
         recyclerView = view.findViewById(R.id.dhikrRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
 
-        val dhikrList = listOf(
-            Dhikr("سُبْحَانَ اللَّهِ", "Glory be to Allah", 33),
-            Dhikr("الْحَمْدُ لِلَّهِ", "All praise is due to Allah", 33),
-            Dhikr("اللَّهُ أَكْبَرُ", "Allah is the Greatest", 33),
-            Dhikr("لَا إِلَٰهَ إِلَّا اللَّهُ", "There is no god but Allah", 100),
-            Dhikr("أَسْتَغْفِرُ اللَّهَ", "I seek forgiveness from Allah", 100),
-            Dhikr("سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "Glory be to Allah and His is the praise", 100),
-            Dhikr("سُبْحَانَ اللَّهِ الْعَظِيمِ", "Glory be to Allah, the Most Great", 100),
-            Dhikr("لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", "There is no power and no strength except with Allah", 100),
-            Dhikr("اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", "O Allah, send prayers upon Muhammad", 100),
-            Dhikr("سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ", "Glory be to Allah, and praise be to Allah, and there is no god but Allah, and Allah is the Greatest", 33)
+        // Load default dhikr list
+        val defaultDhikrList = listOf(
+            Dhikr("سُبْحَانَ اللَّهِ", "Glory be to Allah", 33, false),
+            Dhikr("الْحَمْدُ لِلَّهِ", "All praise is due to Allah", 33, false),
+            Dhikr("اللَّهُ أَكْبَرُ", "Allah is the Greatest", 33, false),
+            Dhikr("لَا إِلَٰهَ إِلَّا اللَّهُ", "There is no god but Allah", 100, false),
+            Dhikr("أَسْتَغْفِرُ اللَّهَ", "I seek forgiveness from Allah", 100, false),
+            Dhikr("سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "Glory be to Allah and His is the praise", 100, false),
+            Dhikr("سُبْحَانَ اللَّهِ الْعَظِيمِ", "Glory be to Allah, the Most Great", 100, false),
+            Dhikr("لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", "There is no power and no strength except with Allah", 100, false),
+            Dhikr("اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", "O Allah, send prayers upon Muhammad", 100, false),
+            Dhikr("سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ", "Glory be to Allah, and praise be to Allah, and there is no god but Allah, and Allah is the Greatest", 33, false)
         )
 
+        // Load saved custom dhikr
+        val savedDhikrJson = sharedPreferences.getString("custom_dhikr", null)
+        val customDhikrList: List<Dhikr> = if (savedDhikrJson != null) {
+            val type = object : TypeToken<List<Dhikr>>() {}.type
+            gson.fromJson(savedDhikrJson, type)
+        } else {
+            emptyList()
+        }
+
+        dhikrList = (defaultDhikrList + customDhikrList).toMutableList()
         adapter = DhikrAdapter(dhikrList)
         recyclerView.adapter = adapter
+
+        // Setup FAB
+        view.findViewById<FloatingActionButton>(R.id.addDhikrFab).setOnClickListener {
+            showAddDhikrDialog()
+        }
+    }
+
+    private fun showAddDhikrDialog() {
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(R.layout.dialog_add_dhikr)
+            .create()
+
+        dialog.show()
+
+        val arabicInput = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.arabicTextInput)
+        val targetCountInput = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.targetCountInput)
+        val saveButton = dialog.findViewById<com.google.android.material.button.MaterialButton>(R.id.saveButton)
+        val cancelButton = dialog.findViewById<com.google.android.material.button.MaterialButton>(R.id.cancelButton)
+
+        saveButton?.setOnClickListener {
+            val arabic = arabicInput?.text?.toString()
+            val targetCount = targetCountInput?.text?.toString()?.toIntOrNull()
+
+            if (!arabic.isNullOrBlank() && targetCount != null) {
+                val newDhikr = Dhikr(arabic, "", targetCount, true)
+                dhikrList.add(newDhikr)
+                adapter.notifyItemInserted(dhikrList.size - 1)
+                saveCustomDhikr()
+                dialog.dismiss()
+            }
+        }
+
+        cancelButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+    }
+
+    private fun showEditDhikrDialog(position: Int) {
+        val dhikr = dhikrList[position]
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(R.layout.dialog_add_dhikr)
+            .create()
+
+        dialog.show()
+
+        val arabicInput = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.arabicTextInput)
+        val targetCountInput = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.targetCountInput)
+        val saveButton = dialog.findViewById<com.google.android.material.button.MaterialButton>(R.id.saveButton)
+        val cancelButton = dialog.findViewById<com.google.android.material.button.MaterialButton>(R.id.cancelButton)
+
+        arabicInput?.setText(dhikr.arabic)
+        targetCountInput?.setText(dhikr.targetCount.toString())
+
+        saveButton?.setOnClickListener {
+            val arabic = arabicInput?.text?.toString()
+            val targetCount = targetCountInput?.text?.toString()?.toIntOrNull()
+
+            if (!arabic.isNullOrBlank() && targetCount != null) {
+                dhikr.arabic = arabic
+                dhikr.targetCount = targetCount
+                adapter.notifyItemChanged(position)
+                saveCustomDhikr()
+                dialog.dismiss()
+            }
+        }
+
+        cancelButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+    }
+
+    private fun saveCustomDhikr() {
+        val customDhikr = dhikrList.filter { it.isCustom }
+        val json = gson.toJson(customDhikr)
+        sharedPreferences.edit().putString("custom_dhikr", json).apply()
     }
 
     data class Dhikr(
-        val arabic: String,
+        var arabic: String,
         val translation: String,
-        val targetCount: Int,
+        var targetCount: Int,
+        val isCustom: Boolean,
         var currentCount: Int = 0
     )
 
-    private inner class DhikrAdapter(private val dhikrList: List<Dhikr>) :
+    private inner class DhikrAdapter(private val dhikrList: MutableList<Dhikr>) :
         RecyclerView.Adapter<DhikrAdapter.DhikrViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DhikrViewHolder {
@@ -66,6 +164,10 @@ class DhikrListFragment : Fragment() {
             holder.arabicText.text = dhikr.arabic
             holder.translationText.text = dhikr.translation
             holder.countText.text = "${dhikr.currentCount}/${dhikr.targetCount}"
+
+            // Show edit and delete buttons only for custom dhikr
+            holder.editButton.visibility = if (dhikr.isCustom) View.VISIBLE else View.GONE
+            holder.deleteButton.visibility = if (dhikr.isCustom) View.VISIBLE else View.GONE
 
             holder.incrementButton.setOnClickListener {
                 if (dhikr.currentCount < dhikr.targetCount) {
@@ -84,6 +186,23 @@ class DhikrListFragment : Fragment() {
                 holder.completeText.visibility = View.GONE
                 holder.incrementButton.isEnabled = true
             }
+
+            holder.editButton.setOnClickListener {
+                showEditDhikrDialog(position)
+            }
+
+            holder.deleteButton.setOnClickListener {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Delete Dhikr")
+                    .setMessage("Are you sure you want to delete this dhikr?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        dhikrList.removeAt(position)
+                        adapter.notifyItemRemoved(position)
+                        saveCustomDhikr()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
         }
 
         override fun getItemCount() = dhikrList.size
@@ -95,6 +214,8 @@ class DhikrListFragment : Fragment() {
             val completeText: TextView = itemView.findViewById(R.id.completeText)
             val incrementButton: Button = itemView.findViewById(R.id.incrementButton)
             val resetButton: Button = itemView.findViewById(R.id.resetButton)
+            val editButton: Button = itemView.findViewById(R.id.editButton)
+            val deleteButton: Button = itemView.findViewById(R.id.deleteButton)
         }
     }
 } 

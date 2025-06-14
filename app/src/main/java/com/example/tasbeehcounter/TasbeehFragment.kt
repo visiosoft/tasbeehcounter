@@ -132,7 +132,13 @@ class TasbeehFragment : Fragment() {
     }
 
     private fun setupVibrator() {
-        vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+            vibrator = vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
     }
 
     private fun setupCounter() {
