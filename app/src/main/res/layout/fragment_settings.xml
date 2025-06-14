@@ -49,24 +49,6 @@
                     android:layout_height="wrap_content"
                     android:text="Vibration"
                     android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/soundSwitch"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Sound"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/autoResetSwitch"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Auto Reset Counter"
-                    android:textSize="16sp"
                     android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>

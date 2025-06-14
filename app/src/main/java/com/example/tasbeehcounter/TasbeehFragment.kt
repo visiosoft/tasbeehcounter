@@ -33,7 +33,7 @@ class TasbeehFragment : Fragment() {
     private var count = 0
     private var isCounting = false
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var vibrator: Vibrator
+    private var vibrator: Vibrator? = null
     private val handler = Handler(Looper.getMainLooper())
     private var currentQuoteIndex = 0
     private lateinit var gestureDetector: GestureDetectorCompat
@@ -132,12 +132,17 @@ class TasbeehFragment : Fragment() {
     }
 
     private fun setupVibrator() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
-            vibrator = vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+                vibrator = vibratorManager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+        } catch (e: Exception) {
+            // Handle vibrator setup error
+            vibrator = null
         }
     }
 
@@ -166,12 +171,20 @@ class TasbeehFragment : Fragment() {
 
     private fun incrementCount() {
         count++
-        if (sharedPreferences.getBoolean("vibration", false)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(50)
+        if (sharedPreferences.getBoolean("vibration", true) && vibrator != null) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (vibrator?.hasVibrator() == true) {
+                        vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (vibrator?.hasVibrator() == true) {
+                        vibrator?.vibrate(50)
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle vibration error silently
             }
         }
         updateUI()
@@ -429,11 +442,17 @@ class TasbeehFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         updateUI()
+        setupVibrator() // Re-initialize vibrator when fragment resumes
     }
 
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(quoteRunnable)
+        try {
+            vibrator?.cancel() // Cancel any ongoing vibration
+        } catch (e: Exception) {
+            // Handle vibration cancel error silently
+        }
     }
 
     override fun onDestroyView() {

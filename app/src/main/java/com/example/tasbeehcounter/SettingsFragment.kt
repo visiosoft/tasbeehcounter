@@ -16,8 +16,6 @@ class SettingsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var vibrationSwitch: SwitchMaterial
-    private lateinit var soundSwitch: SwitchMaterial
-    private lateinit var autoResetSwitch: SwitchMaterial
     private lateinit var darkModeSwitch: SwitchMaterial
     private lateinit var notificationSwitch: SwitchMaterial
     private lateinit var autoLocationSwitch: SwitchMaterial
@@ -39,8 +37,6 @@ class SettingsFragment : Fragment() {
 
     private fun initializeSwitches() {
         vibrationSwitch = binding.vibrationSwitch
-        soundSwitch = binding.soundSwitch
-        autoResetSwitch = binding.autoResetSwitch
         darkModeSwitch = binding.darkModeSwitch
         notificationSwitch = binding.notificationSwitch
         autoLocationSwitch = binding.autoLocationSwitch
@@ -48,8 +44,6 @@ class SettingsFragment : Fragment() {
         // Load saved preferences
         val prefs = requireContext().getSharedPreferences("Settings", 0)
         vibrationSwitch.isChecked = prefs.getBoolean("vibration", true)
-        soundSwitch.isChecked = prefs.getBoolean("sound", true)
-        autoResetSwitch.isChecked = prefs.getBoolean("autoReset", false)
         darkModeSwitch.isChecked = prefs.getBoolean("darkMode", false)
         notificationSwitch.isChecked = prefs.getBoolean("notifications", true)
         autoLocationSwitch.isChecked = prefs.getBoolean("autoLocation", true)
@@ -61,16 +55,6 @@ class SettingsFragment : Fragment() {
 
         vibrationSwitch.setOnCheckedChangeListener { _, isChecked ->
             editor.putBoolean("vibration", isChecked)
-            editor.apply()
-        }
-
-        soundSwitch.setOnCheckedChangeListener { _, isChecked ->
-            editor.putBoolean("sound", isChecked)
-            editor.apply()
-        }
-
-        autoResetSwitch.setOnCheckedChangeListener { _, isChecked ->
-            editor.putBoolean("autoReset", isChecked)
             editor.apply()
         }
 
