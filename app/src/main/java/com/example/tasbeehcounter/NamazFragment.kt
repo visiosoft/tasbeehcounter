@@ -28,6 +28,9 @@ import com.google.android.gms.location.Priority
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -44,6 +47,10 @@ class NamazFragment : Fragment() {
     private var prayerTimes: PrayerTimes? = null
     private var currentCityName: String? = null
     private lateinit var notificationManager: NotificationManager
+    
+    private var quoteChangeJob: Job? = null
+    private var currentQuoteIndex = 0
+    private var isEnglish = true
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -81,6 +88,7 @@ class NamazFragment : Fragment() {
         setupNotificationChannel()
         setupLocationServices()
         setupUI()
+        updateIslamicQuotes()
         // Automatically check location permission on start
         checkLocationPermission()
     }
@@ -313,6 +321,61 @@ class NamazFragment : Fragment() {
         }
     }
 
+    private fun updateIslamicQuotes() {
+        currentQuoteIndex = 0
+        changeQuote()
+        startAutoQuoteChange() // Start auto-changing quotes
+    }
+
+    private fun startAutoQuoteChange() {
+        quoteChangeJob?.cancel() // Cancel any existing job
+        quoteChangeJob = CoroutineScope(Dispatchers.Main).launch {
+            try {
+                while (true) {
+                    delay(10000) // 10 seconds delay
+                    if (isActive) {
+                        changeQuote()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun stopAutoQuoteChange() {
+        quoteChangeJob?.cancel()
+        quoteChangeJob = null
+    }
+
+    private fun changeQuote() {
+        val englishQuotes = listOf(
+            getString(R.string.quote_1),
+            getString(R.string.quote_2),
+            getString(R.string.quote_3),
+            getString(R.string.quote_4),
+            getString(R.string.quote_5),
+            getString(R.string.quote_6),
+            getString(R.string.quote_7),
+            getString(R.string.quote_8)
+        )
+        
+        val urduQuotes = listOf(
+            getString(R.string.quote_1_urdu),
+            getString(R.string.quote_2_urdu),
+            getString(R.string.quote_3_urdu),
+            getString(R.string.quote_4_urdu),
+            getString(R.string.quote_5_urdu),
+            getString(R.string.quote_6_urdu),
+            getString(R.string.quote_7_urdu),
+            getString(R.string.quote_8_urdu)
+        )
+        
+        currentQuoteIndex = (currentQuoteIndex + 1) % englishQuotes.size
+        binding.quotesTextEnglish.text = englishQuotes[currentQuoteIndex]
+        binding.quotesTextUrdu.text = urduQuotes[currentQuoteIndex]
+    }
+
     override fun onResume() {
         super.onResume()
         // Automatically refresh location when fragment resumes
@@ -323,6 +386,7 @@ class NamazFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        stopAutoQuoteChange()
         _binding = null
     }
 } 
