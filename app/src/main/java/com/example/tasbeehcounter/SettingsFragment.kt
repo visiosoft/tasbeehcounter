@@ -1,12 +1,18 @@
 package com.example.tasbeehcounter
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tasbeehcounter.databinding.FragmentSettingsBinding
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -19,6 +25,37 @@ class SettingsFragment : Fragment() {
     private lateinit var darkModeSwitch: SwitchMaterial
     private lateinit var notificationSwitch: SwitchMaterial
     private lateinit var autoLocationSwitch: SwitchMaterial
+    private lateinit var exactAlarmButton: com.google.android.material.button.MaterialButton
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, enable notifications
+            val prefs = requireContext().getSharedPreferences("Settings", 0)
+            prefs.edit().putBoolean("notifications", true).apply()
+            notificationSwitch.isChecked = true
+            
+            // Schedule prayer reminders and daily missed tasbeeh check
+            val notificationService = NotificationService()
+            notificationService.schedulePrayerReminders(requireContext())
+            MissedTasbeehChecker.scheduleDailyCheck(requireContext())
+            
+            Toast.makeText(requireContext(), "Notification permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+            // Permission denied, disable notifications
+            val prefs = requireContext().getSharedPreferences("Settings", 0)
+            prefs.edit().putBoolean("notifications", false).apply()
+            notificationSwitch.isChecked = false
+            
+            // Cancel all notifications and daily checks
+            val notificationService = NotificationService()
+            notificationService.cancelAllNotifications(requireContext())
+            MissedTasbeehChecker.cancelDailyCheck(requireContext())
+            
+            Toast.makeText(requireContext(), "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,6 +77,7 @@ class SettingsFragment : Fragment() {
         darkModeSwitch = binding.darkModeSwitch
         notificationSwitch = binding.notificationSwitch
         autoLocationSwitch = binding.autoLocationSwitch
+        exactAlarmButton = binding.exactAlarmButton
 
         // Load saved preferences
         val prefs = requireContext().getSharedPreferences("Settings", 0)
@@ -47,6 +85,24 @@ class SettingsFragment : Fragment() {
         darkModeSwitch.isChecked = prefs.getBoolean("darkMode", false)
         notificationSwitch.isChecked = prefs.getBoolean("notifications", true)
         autoLocationSwitch.isChecked = prefs.getBoolean("autoLocation", true)
+        
+        // Update exact alarm button text based on permission status
+        updateExactAlarmButtonText()
+    }
+
+    private fun updateExactAlarmButtonText() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (NotificationService.canScheduleExactAlarms(requireContext())) {
+                exactAlarmButton.text = "Exact Alarms Enabled ✓"
+                exactAlarmButton.isEnabled = false
+            } else {
+                exactAlarmButton.text = "Enable Exact Alarms"
+                exactAlarmButton.isEnabled = true
+            }
+        } else {
+            exactAlarmButton.text = "Exact Alarms Not Required"
+            exactAlarmButton.isEnabled = false
+        }
     }
 
     private fun setupListeners() {
@@ -70,13 +126,71 @@ class SettingsFragment : Fragment() {
         }
 
         notificationSwitch.setOnCheckedChangeListener { _, isChecked ->
-            editor.putBoolean("notifications", isChecked)
-            editor.apply()
+            if (isChecked) {
+                // Check if notification permission is granted (Android 13+)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        // Permission already granted
+                        editor.putBoolean("notifications", true)
+                        editor.apply()
+                        
+                        // Schedule prayer reminders and daily missed tasbeeh check
+                        val notificationService = NotificationService()
+                        notificationService.schedulePrayerReminders(requireContext())
+                        MissedTasbeehChecker.scheduleDailyCheck(requireContext())
+                    } else {
+                        // Request permission
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        return@setOnCheckedChangeListener
+                    }
+                } else {
+                    // Android 12 and below don't need explicit permission
+                    editor.putBoolean("notifications", true)
+                    editor.apply()
+                    
+                    // Schedule prayer reminders and daily missed tasbeeh check
+                    val notificationService = NotificationService()
+                    notificationService.schedulePrayerReminders(requireContext())
+                    MissedTasbeehChecker.scheduleDailyCheck(requireContext())
+                }
+            } else {
+                // Disable notifications
+                editor.putBoolean("notifications", false)
+                editor.apply()
+                
+                // Cancel all notifications and daily checks
+                val notificationService = NotificationService()
+                notificationService.cancelAllNotifications(requireContext())
+                MissedTasbeehChecker.cancelDailyCheck(requireContext())
+            }
         }
 
         autoLocationSwitch.setOnCheckedChangeListener { _, isChecked ->
             editor.putBoolean("autoLocation", isChecked)
             editor.apply()
+        }
+
+        exactAlarmButton.setOnClickListener {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                NotificationService.requestExactAlarmPermission(requireContext())
+                Toast.makeText(requireContext(), "Please enable exact alarms in system settings", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        binding.testPrayerNotificationsButton.setOnClickListener {
+            val notificationService = NotificationService()
+            notificationService.testPrayerNotifications(requireContext())
+            Toast.makeText(requireContext(), "Test next prayer notification sent!", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.testMissedTasbeehButton.setOnClickListener {
+            val notificationService = NotificationService()
+            notificationService.testMissedTasbeehNotification(requireContext())
+            Toast.makeText(requireContext(), "Test missed tasbeeh notification sent!", Toast.LENGTH_SHORT).show()
         }
 
         binding.rateButton.setOnClickListener {
@@ -107,5 +221,11 @@ class SettingsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Update exact alarm button text when returning from settings
+        updateExactAlarmButtonText()
     }
 } 

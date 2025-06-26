@@ -200,6 +200,9 @@ class TasbeehFragment : Fragment() {
     private fun incrementCount() {
         count++
         
+        // Update last tasbeeh timestamp for missed tasbeeh notifications
+        NotificationService().updateLastTasbeehTimestamp(requireContext())
+        
         // Check vibration setting and vibrate if enabled
         val vibrationEnabled = sharedPreferences.getBoolean("vibration", true)
         android.util.Log.d("TasbeehFragment", "Vibration enabled: $vibrationEnabled, Vibrator available: ${vibrator != null}")

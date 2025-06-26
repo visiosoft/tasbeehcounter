@@ -24,6 +24,25 @@ class MainActivity : AppCompatActivity() {
 
         sharedPreferences = getSharedPreferences("Settings", Context.MODE_PRIVATE)
         
+        // Initialize notification service
+        val notificationService = NotificationService()
+        notificationService.createNotificationChannels(this)
+        
+        try {
+            notificationService.schedulePrayerReminders(this)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error scheduling prayer reminders", e)
+            // Continue without prayer reminders if scheduling fails
+        }
+        
+        // Schedule daily missed tasbeeh check
+        try {
+            MissedTasbeehChecker.scheduleDailyCheck(this)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error scheduling daily tasbeeh check", e)
+            // Continue without daily check if scheduling fails
+        }
+        
         // Setup Navigation
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
@@ -36,6 +55,9 @@ class MainActivity : AppCompatActivity() {
         }
         if (!sharedPreferences.contains("darkMode")) {
             sharedPreferences.edit().putBoolean("darkMode", false).apply()
+        }
+        if (!sharedPreferences.contains("notifications")) {
+            sharedPreferences.edit().putBoolean("notifications", true).apply()
         }
 
         // Always enable fullscreen mode

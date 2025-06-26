@@ -219,22 +219,28 @@ class NamazFragment : Fragment() {
                 val province = address.optString("county", "")
                 
                 withContext(Dispatchers.Main) {
-                    currentCityName = city
-                    val locationText = when {
-                        city.isNotEmpty() && province.isNotEmpty() -> "$city, $province"
-                        city.isNotEmpty() && state.isNotEmpty() -> "$city, $state"
-                        city.isNotEmpty() -> city
-                        state.isNotEmpty() -> state
-                        else -> getDefaultMainCity()
+                    // Check if fragment is still active before updating UI
+                    if (isAdded && !isDetached && _binding != null) {
+                        currentCityName = city
+                        val locationText = when {
+                            city.isNotEmpty() && province.isNotEmpty() -> "$city, $province"
+                            city.isNotEmpty() && state.isNotEmpty() -> "$city, $state"
+                            city.isNotEmpty() -> city
+                            state.isNotEmpty() -> state
+                            else -> getDefaultMainCity()
+                        }
+                        updateLocationText(locationText)
+                        showLocationNotification("Location Updated", "Prayer times updated for $locationText")
+                        updatePrayerTimes()
                     }
-                    updateLocationText(locationText)
-                    showLocationNotification("Location Updated", "Prayer times updated for $locationText")
-                    updatePrayerTimes()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    updateLocationText(getDefaultMainCity())
-                    updatePrayerTimes()
+                    // Check if fragment is still active before updating UI
+                    if (isAdded && !isDetached && _binding != null) {
+                        updateLocationText(getDefaultMainCity())
+                        updatePrayerTimes()
+                    }
                 }
             }
         }
@@ -278,7 +284,7 @@ class NamazFragment : Fragment() {
     }
 
     private fun updateLocationText(text: String) {
-        binding.locationText.text = text
+        _binding?.locationText?.text = text
     }
 
     private fun updatePrayerTimes() {
@@ -298,24 +304,26 @@ class NamazFragment : Fragment() {
             val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
             val date = Date()
             
-            binding.namazDateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(date)
-            binding.fajrTime.text = dateFormat.format(times.fajr)
-            binding.dhuhrTime.text = dateFormat.format(times.dhuhr)
-            binding.asrTime.text = dateFormat.format(times.asr)
-            binding.maghribTime.text = dateFormat.format(times.maghrib)
-            binding.ishaTime.text = dateFormat.format(times.isha)
+            _binding?.let { binding ->
+                binding.namazDateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(date)
+                binding.fajrTime.text = dateFormat.format(times.fajr)
+                binding.dhuhrTime.text = dateFormat.format(times.dhuhr)
+                binding.asrTime.text = dateFormat.format(times.asr)
+                binding.maghribTime.text = dateFormat.format(times.maghrib)
+                binding.ishaTime.text = dateFormat.format(times.isha)
 
-            // Show next prayer time
-            val nextPrayer = when {
-                date.before(times.fajr) -> "Fajr"
-                date.before(times.dhuhr) -> "Dhuhr"
-                date.before(times.asr) -> "Asr"
-                date.before(times.maghrib) -> "Maghrib"
-                date.before(times.isha) -> "Isha"
-                else -> "Fajr (Tomorrow)"
+                // Show next prayer time
+                val nextPrayer = when {
+                    date.before(times.fajr) -> "Fajr"
+                    date.before(times.dhuhr) -> "Dhuhr"
+                    date.before(times.asr) -> "Asr"
+                    date.before(times.maghrib) -> "Maghrib"
+                    date.before(times.isha) -> "Isha"
+                    else -> "Fajr (Tomorrow)"
+                }
+                
+                binding.namazNextPrayerText.text = "Next Prayer: $nextPrayer"
             }
-            
-            binding.namazNextPrayerText.text = "Next Prayer: $nextPrayer"
         }
     }
 
@@ -331,8 +339,10 @@ class NamazFragment : Fragment() {
             try {
                 while (true) {
                     delay(10000) // 10 seconds delay
-                    if (isActive) {
+                    if (isActive && isAdded && !isDetached && _binding != null) {
                         changeQuote()
+                    } else {
+                        break // Exit the loop if fragment is no longer active
                     }
                 }
             } catch (e: Exception) {
@@ -370,8 +380,10 @@ class NamazFragment : Fragment() {
         )
         
         currentQuoteIndex = (currentQuoteIndex + 1) % englishQuotes.size
-        binding.quotesTextEnglish.text = englishQuotes[currentQuoteIndex]
-        binding.quotesTextUrdu.text = urduQuotes[currentQuoteIndex]
+        _binding?.let { binding ->
+            binding.quotesTextEnglish.text = englishQuotes[currentQuoteIndex]
+            binding.quotesTextUrdu.text = urduQuotes[currentQuoteIndex]
+        }
     }
 
     override fun onResume() {
