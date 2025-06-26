@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         supportActionBar?.hide()
 
-        sharedPreferences = getSharedPreferences("TasbeehSettings", Context.MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences("Settings", Context.MODE_PRIVATE)
         
         // Setup Navigation
         val navHostFragment = supportFragmentManager
@@ -32,10 +32,10 @@ class MainActivity : AppCompatActivity() {
 
         // Set default values if not set
         if (!sharedPreferences.contains("vibration")) {
-            sharedPreferences.edit().putBoolean("vibration", false).apply()
+            sharedPreferences.edit().putBoolean("vibration", true).apply()
         }
-        if (!sharedPreferences.contains("dark_mode")) {
-            sharedPreferences.edit().putBoolean("dark_mode", false).apply()
+        if (!sharedPreferences.contains("darkMode")) {
+            sharedPreferences.edit().putBoolean("darkMode", false).apply()
         }
 
         // Always enable fullscreen mode

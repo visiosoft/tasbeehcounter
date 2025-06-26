@@ -35,7 +35,7 @@ class TasbeehHistoryFragment : Fragment() {
     }
 
     private fun loadHistory() {
-        val sharedPreferences = requireContext().getSharedPreferences("TasbeehSettings", android.content.Context.MODE_PRIVATE)
+        val sharedPreferences = requireContext().getSharedPreferences("Settings", android.content.Context.MODE_PRIVATE)
         val savedCounts = sharedPreferences.getString("saved_counts", "[]")
         val countsList = mutableListOf<TasbeehCount>()
         

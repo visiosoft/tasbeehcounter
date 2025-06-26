@@ -125,10 +125,28 @@ class TasbeehFragment : Fragment() {
         updateStartStopButton()
         showNextQuote()
         startQuoteRotation()
+        
+        // Test vibration to ensure it's working
+        if (vibrator != null && vibrator?.hasVibrator() == true) {
+            try {
+                android.util.Log.d("TasbeehFragment", "Testing vibration on fragment creation...")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator?.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(100)
+                }
+                android.util.Log.d("TasbeehFragment", "Test vibration completed successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("TasbeehFragment", "Error during test vibration: ${e.message}")
+            }
+        } else {
+            android.util.Log.e("TasbeehFragment", "Cannot test vibration - vibrator not available")
+        }
     }
 
     private fun setupSharedPreferences() {
-        sharedPreferences = requireContext().getSharedPreferences("TasbeehSettings", Context.MODE_PRIVATE)
+        sharedPreferences = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE)
     }
 
     private fun setupVibrator() {
@@ -140,9 +158,19 @@ class TasbeehFragment : Fragment() {
                 @Suppress("DEPRECATION")
                 vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             }
+            
+            // Check if vibrator is available
+            if (vibrator?.hasVibrator() == true) {
+                // Vibrator is available
+                android.util.Log.d("TasbeehFragment", "Vibrator is available and working")
+            } else {
+                vibrator = null
+                android.util.Log.e("TasbeehFragment", "Vibrator is not available on this device")
+            }
         } catch (e: Exception) {
             // Handle vibrator setup error
             vibrator = null
+            android.util.Log.e("TasbeehFragment", "Error setting up vibrator: ${e.message}")
         }
     }
 
@@ -171,22 +199,31 @@ class TasbeehFragment : Fragment() {
 
     private fun incrementCount() {
         count++
-        if (sharedPreferences.getBoolean("vibration", true) && vibrator != null) {
+        
+        // Check vibration setting and vibrate if enabled
+        val vibrationEnabled = sharedPreferences.getBoolean("vibration", true)
+        android.util.Log.d("TasbeehFragment", "Vibration enabled: $vibrationEnabled, Vibrator available: ${vibrator != null}")
+        
+        if (vibrationEnabled && vibrator != null) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     if (vibrator?.hasVibrator() == true) {
                         vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                        android.util.Log.d("TasbeehFragment", "Vibration triggered (API 26+)")
                     }
                 } else {
                     @Suppress("DEPRECATION")
                     if (vibrator?.hasVibrator() == true) {
                         vibrator?.vibrate(50)
+                        android.util.Log.d("TasbeehFragment", "Vibration triggered (API < 26)")
                     }
                 }
             } catch (e: Exception) {
                 // Handle vibration error silently
+                android.util.Log.e("TasbeehFragment", "Error during vibration: ${e.message}")
             }
         }
+        
         updateUI()
     }
 
@@ -459,5 +496,27 @@ class TasbeehFragment : Fragment() {
         super.onDestroyView()
         handler.removeCallbacks(quoteRunnable)
         _binding = null
+    }
+
+    // Test method for vibration debugging
+    private fun testVibrationPattern() {
+        if (vibrator != null && vibrator?.hasVibrator() == true) {
+            try {
+                android.util.Log.d("TasbeehFragment", "Testing vibration pattern...")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // Test with different patterns
+                    val pattern = longArrayOf(0, 100, 100, 100, 100, 100)
+                    val amplitudes = intArrayOf(0, VibrationEffect.DEFAULT_AMPLITUDE, 0, VibrationEffect.DEFAULT_AMPLITUDE, 0, VibrationEffect.DEFAULT_AMPLITUDE)
+                    vibrator?.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
+                } else {
+                    @Suppress("DEPRECATION")
+                    val pattern = longArrayOf(0, 100, 100, 100, 100, 100)
+                    vibrator?.vibrate(pattern, -1)
+                }
+                android.util.Log.d("TasbeehFragment", "Vibration pattern test completed")
+            } catch (e: Exception) {
+                android.util.Log.e("TasbeehFragment", "Error during vibration pattern test: ${e.message}")
+            }
+        }
     }
 } 
