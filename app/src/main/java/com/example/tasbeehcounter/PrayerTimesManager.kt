@@ -237,7 +237,9 @@ object PrayerTimesManager {
     private suspend fun fetchPrayerTimesFromAPI(location: LocationData, date: String): PrayerTimes? {
         return withContext(Dispatchers.IO) {
             try {
-                val url = "$API_BASE_URL/$date?latitude=${location.latitude}&longitude=${location.longitude}&method=1"
+                // Use method=1 (University Of Islamic Sciences, Karachi) for more accurate times
+                // Add school=1 for Hanafi Asr calculation (shadow factor = 2)
+                val url = "$API_BASE_URL/$date?latitude=${location.latitude}&longitude=${location.longitude}&method=1&school=1"
                 Log.d(TAG, "Fetching prayer times from: $url")
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
@@ -774,7 +776,7 @@ object PrayerTimesManager {
             // Test methods 1-6
             for (method in 1..6) {
                 try {
-                    val url = "$API_BASE_URL/$today?latitude=${currentLocation.latitude}&longitude=${currentLocation.longitude}&method=$method"
+                    val url = "$API_BASE_URL/$today?latitude=${currentLocation.latitude}&longitude=${currentLocation.longitude}&method=$method&school=1"
                     Log.d(TAG, "Testing method $method: $url")
                     
                     val connection = URL(url).openConnection() as HttpURLConnection
@@ -821,6 +823,84 @@ object PrayerTimesManager {
             }
             
             Log.d(TAG, "Method testing completed. Results: ${results.keys.size} successful")
+            return@withContext results
+        }
+    }
+
+    /**
+     * Test both Asr calculation methods to find the correct one
+     * school=0: Shafi'i method (shadow factor = 1) - Standard
+     * school=1: Hanafi method (shadow factor = 2) - Later Asr time
+     */
+    suspend fun testAsrCalculationMethods(context: Context): Map<String, PrayerTimes?> {
+        return withContext(Dispatchers.IO) {
+            val results = mutableMapOf<String, PrayerTimes?>()
+            val today = dateFormat.format(Calendar.getInstance().time)
+            
+            // Get current location
+            val currentLocation = getCurrentLocation(context)
+            if (currentLocation == null) {
+                Log.e(TAG, "Failed to get current location for Asr method testing")
+                return@withContext results
+            }
+            
+            Log.d(TAG, "Testing Asr calculation methods for location: ${currentLocation.cityName}")
+            
+            // Test both school methods
+            val schools = mapOf(
+                "Shafi'i (Standard)" to 0,
+                "Hanafi (Later Asr)" to 1
+            )
+            
+            for ((schoolName, schoolValue) in schools) {
+                try {
+                    val url = "$API_BASE_URL/$today?latitude=${currentLocation.latitude}&longitude=${currentLocation.longitude}&method=1&school=$schoolValue"
+                    Log.d(TAG, "Testing $schoolName: $url")
+                    
+                    val connection = URL(url).openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                        val response = StringBuilder()
+                        var line: String?
+                        
+                        while (reader.readLine().also { line = it } != null) {
+                            response.append(line)
+                        }
+                        reader.close()
+
+                        val jsonResponse = JSONObject(response.toString())
+                        val data = jsonResponse.getJSONObject("data")
+                        val timings = data.getJSONObject("timings")
+
+                        val prayerTimes = PrayerTimes(
+                            date = today,
+                            fajr = timings.getString("Fajr"),
+                            sunrise = timings.getString("Sunrise"),
+                            dhuhr = timings.getString("Dhuhr"),
+                            asr = timings.getString("Asr"),
+                            maghrib = timings.getString("Maghrib"),
+                            isha = timings.getString("Isha"),
+                            location = "${currentLocation.cityName} ($schoolName)"
+                        )
+                        
+                        results[schoolName] = prayerTimes
+                        Log.d(TAG, "$schoolName: Asr=${prayerTimes.asr}")
+                    } else {
+                        Log.e(TAG, "$schoolName failed with response code: $responseCode")
+                        results[schoolName] = null
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error testing $schoolName", e)
+                    results[schoolName] = null
+                }
+            }
+            
+            Log.d(TAG, "Asr method testing completed. Results: ${results.keys.size} successful")
             return@withContext results
         }
     }
