@@ -44,7 +44,7 @@
                 android:src="@drawable/ic_location"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Update Location"
-                android:tint="?attr/colorPrimary"/>
+                app:tint="?attr/colorPrimary"/>
         </LinearLayout>
 
         <TextView

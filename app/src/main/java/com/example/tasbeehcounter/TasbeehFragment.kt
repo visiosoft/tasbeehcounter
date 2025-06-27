@@ -521,7 +521,13 @@ class TasbeehFragment : Fragment() {
                 } else {
                     @Suppress("DEPRECATION")
                     val pattern = longArrayOf(0, 100, 100, 100, 100, 100)
-                    vibrator?.vibrate(pattern, -1)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val amplitudes = intArrayOf(0, VibrationEffect.DEFAULT_AMPLITUDE, 0, VibrationEffect.DEFAULT_AMPLITUDE, 0, VibrationEffect.DEFAULT_AMPLITUDE)
+                        vibrator?.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator?.vibrate(pattern, -1)
+                    }
                 }
                 android.util.Log.d("TasbeehFragment", "Vibration pattern test completed")
             } catch (e: Exception) {

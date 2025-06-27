@@ -150,7 +150,7 @@
                     android:id="@+id/testPrayerNotificationsButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Test Next Prayer Notification"
+                    android:text="Test Next Prayer Notification (with Audio)"
                     android:textSize="12sp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_marginBottom="4dp"/>
@@ -161,7 +161,17 @@
                     android:layout_height="wrap_content"
                     android:text="Test Missed Tasbeeh Alert"
                     android:textSize="12sp"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_marginBottom="4dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/refreshAccurateLocationButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Fetch Fresh Data Based on Current Location"
+                    android:textSize="12sp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_marginBottom="4dp"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

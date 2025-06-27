@@ -134,7 +134,7 @@
                     android:layout_height="48dp"
                     android:src="@android:drawable/ic_media_previous"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
                     android:contentDescription="Previous Quote" />
 
                 <LinearLayout
@@ -192,7 +192,7 @@
                     android:layout_height="48dp"
                     android:src="@android:drawable/ic_media_next"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
                     android:contentDescription="Next Quote" />
 
             </LinearLayout>

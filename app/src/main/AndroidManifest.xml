@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:name=".TasbeehApplication"
@@ -33,19 +34,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".DhikrListActivity"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         
-        <activity
-            android:name=".NotificationTestActivity"
-            android:exported="false"
-            android:label="Notification Test" />
+        <!-- Audio Service for prayer notifications -->
+        <service
+            android:name=".AudioService"
+            android:exported="false" />
         
         <!-- Broadcast receiver for missed tasbeeh checks -->
         <receiver
@@ -61,6 +54,16 @@
         <receiver
             android:name=".PrayerReminderReceiver"
             android:exported="false" />
+        
+        <!-- Broadcast receiver for automatic prayer times sync -->
+        <receiver
+            android:name=".PrayerSyncReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.tasbeehcounter.SYNC_PRAYER_TIMES" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
         
         <!-- WorkManager provider for prayer reminders -->
         <provider

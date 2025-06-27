@@ -7,12 +7,17 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Build
+import android.os.Handler
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class NotificationService {
     companion object {
@@ -88,11 +93,11 @@ class NotificationService {
         
         // Prayer reminder messages
         val PRAYER_MESSAGES = mapOf(
-            "fajr" to "Time for Fajr prayer",
-            "dhuhr" to "Time for Dhuhr prayer",
-            "asr" to "Time for Asr prayer",
-            "maghrib" to "Time for Maghrib prayer",
-            "isha" to "Time for Isha prayer"
+            "fajr" to "Fajr prayer time has started",
+            "dhuhr" to "Dhuhr prayer time has started",
+            "asr" to "Asr prayer time has started",
+            "maghrib" to "Maghrib prayer time has started",
+            "isha" to "Isha prayer time has started"
         )
         
         /**
@@ -302,6 +307,7 @@ class NotificationService {
     
     /**
      * Schedule prayer reminder from time string (HH:MM format)
+     * Notification will be sent 4-6 minutes AFTER the prayer time starts
      */
     private fun schedulePrayerReminderFromTime(context: Context, prayerName: String, timeString: String) {
         try {
@@ -309,10 +315,12 @@ class NotificationService {
             val hour = timeParts[0].toInt()
             val minute = timeParts[1].toInt()
             
-            // Add 5 minutes to the prayer time for the reminder
+            // Add 5 minutes AFTER the prayer time starts (4-6 minutes range)
             val reminderMinute = minute + 5
             val reminderHour = if (reminderMinute >= 60) hour + 1 else hour
             val finalMinute = if (reminderMinute >= 60) reminderMinute - 60 else reminderMinute
+            
+            Log.d(TAG, "Prayer $prayerName starts at $timeString, notification scheduled for ${reminderHour}:${String.format("%02d", finalMinute)} (5 minutes after)")
             
             schedulePrayerReminder(context, prayerName, reminderHour, finalMinute)
         } catch (e: Exception) {
@@ -343,8 +351,6 @@ class NotificationService {
         if (calendar.timeInMillis <= System.currentTimeMillis()) {
             calendar.add(Calendar.DAY_OF_MONTH, 1)
         }
-        
-        val delay = calendar.timeInMillis - System.currentTimeMillis()
         
         val intent = Intent(context, PrayerReminderReceiver::class.java).apply {
             putExtra("prayer", prayerName)
@@ -539,6 +545,270 @@ class NotificationService {
         showMissedTasbeehNotification(context)
         Log.d(TAG, "Test missed tasbeeh notification sent with bilingual quote")
     }
+    
+    /**
+     * Send prayer notification with Arabic audio "Allahu Akbar"
+     * This function combines notification display with audio playback
+     * Works even when the app is in the background
+     */
+    fun sendPrayerNotificationWithAudio(context: Context, prayerName: String) {
+        try {
+            // Check if notifications are enabled
+            val sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+            val notificationsEnabled = sharedPreferences.getBoolean("notifications", true)
+            
+            if (!notificationsEnabled) {
+                Log.d(TAG, "Notifications are disabled, skipping prayer notification with audio")
+                return
+            }
+            
+            // Get prayer display information
+            val prayerDisplayName = PRAYER_NAMES[prayerName] ?: prayerName
+            val message = PRAYER_MESSAGES[prayerName] ?: "It's time for prayer"
+            
+            // Create notification intent
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // Build the notification
+            val notification = NotificationCompat.Builder(context, CHANNEL_PRAYER_REMINDERS)
+                .setSmallIcon(R.drawable.ic_prayer)
+                .setContentTitle("$prayerDisplayName Prayer Reminder")
+                .setContentText("$message - Allahu Akbar")
+                .setStyle(NotificationCompat.BigTextStyle()
+                    .bigText("$message\nAllahu Akbar - اللہ اکبر\n(Reminder sent 5 minutes after prayer time started)"))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setVibrate(longArrayOf(0, 500, 200, 500)) // Vibration pattern
+                .build()
+            
+            // Show the notification
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationId = when (prayerName) {
+                "fajr" -> NOTIFICATION_FAJR
+                "dhuhr" -> NOTIFICATION_DHUHR
+                "asr" -> NOTIFICATION_ASR
+                "maghrib" -> NOTIFICATION_MAGHRIB
+                "isha" -> NOTIFICATION_ISHA
+                else -> 2000
+            }
+            
+            notificationManager.notify(notificationId, notification)
+            Log.d(TAG, "Prayer notification sent for $prayerName")
+            
+            // Play audio notification
+            try {
+                Log.d(TAG, "Playing audio notification for prayer: $prayerName")
+                SimpleAudioTest.playAllahuAkbarAudio(context)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error playing audio notification", e)
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending prayer notification with audio for $prayerName", e)
+        }
+    }
+    
+    /**
+     * Send prayer notification with custom audio file
+     * @param context Application context
+     * @param prayerName Name of the prayer (fajr, dhuhr, asr, maghrib, isha)
+     * @param audioFileName Name of the audio file (without extension) in raw resources
+     */
+    fun sendPrayerNotificationWithCustomAudio(context: Context, prayerName: String, audioFileName: String) {
+        try {
+            // Check if notifications are enabled
+            val sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+            val notificationsEnabled = sharedPreferences.getBoolean("notifications", true)
+            
+            if (!notificationsEnabled) {
+                Log.d(TAG, "Notifications are disabled, skipping prayer notification with custom audio")
+                return
+            }
+            
+            // Get prayer display information
+            val prayerDisplayName = PRAYER_NAMES[prayerName] ?: prayerName
+            val message = PRAYER_MESSAGES[prayerName] ?: "It's time for prayer"
+            
+            // Create notification intent
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // Build the notification
+            val notification = NotificationCompat.Builder(context, CHANNEL_PRAYER_REMINDERS)
+                .setSmallIcon(R.drawable.ic_prayer)
+                .setContentTitle("$prayerDisplayName Prayer Time")
+                .setContentText("$message - Allahu Akbar")
+                .setStyle(NotificationCompat.BigTextStyle()
+                    .bigText("$message\nAllahu Akbar - اللہ اکبر"))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setVibrate(longArrayOf(0, 500, 200, 500)) // Vibration pattern
+                .build()
+            
+            // Show the notification
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationId = when (prayerName) {
+                "fajr" -> NOTIFICATION_FAJR
+                "dhuhr" -> NOTIFICATION_DHUHR
+                "asr" -> NOTIFICATION_ASR
+                "maghrib" -> NOTIFICATION_MAGHRIB
+                "isha" -> NOTIFICATION_ISHA
+                else -> 2000
+            }
+            
+            notificationManager.notify(notificationId, notification)
+            Log.d(TAG, "Prayer notification sent for $prayerName with custom audio: $audioFileName")
+            
+            // Start audio service to play custom audio
+            startCustomAudioService(context, audioFileName)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending prayer notification with custom audio for $prayerName", e)
+        }
+    }
+    
+    /**
+     * Start the audio service to play custom audio file
+     */
+    private fun startCustomAudioService(context: Context, audioFileName: String) {
+        try {
+            Log.d(TAG, "Starting custom audio: $audioFileName")
+            
+            // Use direct audio method for custom files too
+            val mediaPlayer = MediaPlayer()
+            val resourceId = context.resources.getIdentifier(audioFileName, "raw", context.packageName)
+            
+            if (resourceId != 0) {
+                val assetFileDescriptor = context.resources.openRawResourceFd(resourceId)
+                mediaPlayer.setDataSource(assetFileDescriptor.fileDescriptor, assetFileDescriptor.startOffset, assetFileDescriptor.declaredLength)
+                assetFileDescriptor.close()
+                
+                mediaPlayer.setOnPreparedListener {
+                    mediaPlayer.start()
+                    Log.d(TAG, "Custom audio started: $audioFileName")
+                }
+                
+                mediaPlayer.setOnCompletionListener {
+                    mediaPlayer.release()
+                }
+                
+                mediaPlayer.setOnErrorListener { _, what, extra ->
+                    Log.e(TAG, "Custom audio error: what=$what, extra=$extra")
+                    mediaPlayer.release()
+                    true
+                }
+                
+                mediaPlayer.prepareAsync()
+                
+            } else {
+                Log.e(TAG, "Custom audio file not found: $audioFileName")
+                mediaPlayer.release()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting custom audio: $audioFileName", e)
+        }
+    }
+    
+    /**
+     * Schedule automatic background sync for prayer times
+     * This ensures offline availability of prayer times
+     */
+    fun scheduleAutomaticSync(context: Context) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            
+            // Schedule sync every 12 hours (twice a day)
+            val syncInterval = 12 * 60 * 60 * 1000L // 12 hours in milliseconds
+            
+            val intent = Intent(context, PrayerSyncReceiver::class.java).apply {
+                action = "com.example.tasbeehcounter.SYNC_PRAYER_TIMES"
+            }
+            
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                9999, // Unique ID for sync
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // Cancel existing sync alarms
+            alarmManager.cancel(pendingIntent)
+            
+            // Schedule new sync alarm
+            if (canScheduleExactAlarms(context)) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    alarmManager.setRepeating(
+                        AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + syncInterval,
+                        syncInterval,
+                        pendingIntent
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    alarmManager.setRepeating(
+                        AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + syncInterval,
+                        syncInterval,
+                        pendingIntent
+                    )
+                }
+                Log.d(TAG, "Scheduled automatic prayer times sync every 12 hours")
+            } else {
+                Log.w(TAG, "Cannot schedule exact alarms for automatic sync")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scheduling automatic sync", e)
+        }
+    }
+    
+    /**
+     * Cancel automatic background sync
+     */
+    fun cancelAutomaticSync(context: Context) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, PrayerSyncReceiver::class.java).apply {
+                action = "com.example.tasbeehcounter.SYNC_PRAYER_TIMES"
+            }
+            
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                9999,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            pendingIntent?.let {
+                alarmManager.cancel(it)
+                it.cancel()
+                Log.d(TAG, "Cancelled automatic prayer times sync")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cancelling automatic sync", e)
+        }
+    }
 }
 
 /**
@@ -578,41 +848,17 @@ class PrayerReminderReceiver : BroadcastReceiver() {
     }
     
     private fun showPrayerReminderNotification(context: Context, prayerName: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val prayerDisplayName = NotificationService.PRAYER_NAMES[prayerName] ?: prayerName
-        val message = NotificationService.PRAYER_MESSAGES[prayerName] ?: "It's time for prayer"
+        // Use the new audio-enhanced notification function
+        NotificationService().sendPrayerNotificationWithAudio(context, prayerName)
         
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        // Also play audio directly to ensure it works (10-second version)
+        try {
+            SimpleAudioTest.playAllahuAkbarAudio(context)
+        } catch (e: Exception) {
+            Log.e("PrayerReminderReceiver", "Error playing direct audio", e)
         }
         
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        val notification = NotificationCompat.Builder(context, NotificationService.CHANNEL_PRAYER_REMINDERS)
-            .setSmallIcon(R.drawable.ic_prayer)
-            .setContentTitle("$prayerDisplayName Prayer Time")
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
-        
-        val notificationId = when (prayerName) {
-            "fajr" -> NotificationService.NOTIFICATION_FAJR
-            "dhuhr" -> NotificationService.NOTIFICATION_DHUHR
-            "asr" -> NotificationService.NOTIFICATION_ASR
-            "maghrib" -> NotificationService.NOTIFICATION_MAGHRIB
-            "isha" -> NotificationService.NOTIFICATION_ISHA
-            else -> 2000
-        }
-        
-        notificationManager.notify(notificationId, notification)
-        Log.d("PrayerReminderReceiver", "Prayer reminder notification shown for $prayerName")
+        Log.d("PrayerReminderReceiver", "Prayer reminder notification with audio shown for $prayerName")
     }
     
     private fun scheduleNextDayReminder(context: Context, prayerName: String) {
@@ -679,6 +925,42 @@ class PrayerReminderReceiver : BroadcastReceiver() {
                 pendingIntent
             )
             Log.d("PrayerReminderReceiver", "Scheduled inexact next day reminder for $prayerName (exact alarms not permitted)")
+        }
+    }
+}
+
+/**
+ * Broadcast receiver for automatic prayer times sync
+ */
+class PrayerSyncReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            "com.example.tasbeehcounter.SYNC_PRAYER_TIMES" -> {
+                Log.d("PrayerSyncReceiver", "Starting automatic prayer times sync")
+                
+                // Use coroutine to perform sync
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val success = PrayerTimesManager.performAutomaticSync(context)
+                        if (success) {
+                            Log.d("PrayerSyncReceiver", "Automatic sync completed successfully")
+                        } else {
+                            Log.e("PrayerSyncReceiver", "Automatic sync failed")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("PrayerSyncReceiver", "Error during automatic sync", e)
+                    }
+                }
+            }
+            Intent.ACTION_BOOT_COMPLETED -> {
+                try {
+                    // Re-schedule automatic sync after device reboot
+                    NotificationService().scheduleAutomaticSync(context)
+                    Log.d("PrayerSyncReceiver", "Re-scheduled automatic sync after boot")
+                } catch (e: Exception) {
+                    Log.e("PrayerSyncReceiver", "Error re-scheduling sync after boot", e)
+                }
+            }
         }
     }
 } 

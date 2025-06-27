@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.tasbeehcounter.databinding.FragmentSettingsBinding
 import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
@@ -42,6 +43,7 @@ class SettingsFragment : Fragment() {
             // Schedule prayer reminders and daily missed tasbeeh check
             val notificationService = NotificationService()
             notificationService.schedulePrayerReminders(requireContext())
+            notificationService.scheduleAutomaticSync(requireContext())
             MissedTasbeehChecker.scheduleDailyCheck(requireContext())
             
             Toast.makeText(requireContext(), "Notification permission granted", Toast.LENGTH_SHORT).show()
@@ -54,6 +56,7 @@ class SettingsFragment : Fragment() {
             // Cancel all notifications and daily checks
             val notificationService = NotificationService()
             notificationService.cancelAllNotifications(requireContext())
+            notificationService.cancelAutomaticSync(requireContext())
             MissedTasbeehChecker.cancelDailyCheck(requireContext())
             
             Toast.makeText(requireContext(), "Notification permission denied", Toast.LENGTH_SHORT).show()
@@ -144,6 +147,7 @@ class SettingsFragment : Fragment() {
                         // Schedule prayer reminders and daily missed tasbeeh check
                         val notificationService = NotificationService()
                         notificationService.schedulePrayerReminders(requireContext())
+                        notificationService.scheduleAutomaticSync(requireContext())
                         MissedTasbeehChecker.scheduleDailyCheck(requireContext())
                     } else {
                         // Request permission
@@ -158,6 +162,7 @@ class SettingsFragment : Fragment() {
                     // Schedule prayer reminders and daily missed tasbeeh check
                     val notificationService = NotificationService()
                     notificationService.schedulePrayerReminders(requireContext())
+                    notificationService.scheduleAutomaticSync(requireContext())
                     MissedTasbeehChecker.scheduleDailyCheck(requireContext())
                 }
             } else {
@@ -168,6 +173,7 @@ class SettingsFragment : Fragment() {
                 // Cancel all notifications and daily checks
                 val notificationService = NotificationService()
                 notificationService.cancelAllNotifications(requireContext())
+                notificationService.cancelAutomaticSync(requireContext())
                 MissedTasbeehChecker.cancelDailyCheck(requireContext())
             }
         }
@@ -186,14 +192,32 @@ class SettingsFragment : Fragment() {
 
         binding.testPrayerNotificationsButton.setOnClickListener {
             val notificationService = NotificationService()
-            notificationService.testPrayerNotifications(requireContext())
-            Toast.makeText(requireContext(), "Test next prayer notification sent!", Toast.LENGTH_SHORT).show()
+            notificationService.sendPrayerNotificationWithAudio(requireContext(), "fajr")
+            Toast.makeText(requireContext(), "Test prayer notification with audio sent!", Toast.LENGTH_SHORT).show()
         }
 
         binding.testMissedTasbeehButton.setOnClickListener {
             val notificationService = NotificationService()
             notificationService.testMissedTasbeehNotification(requireContext())
             Toast.makeText(requireContext(), "Test missed tasbeeh notification with bilingual quote sent!", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.refreshAccurateLocationButton.setOnClickListener {
+            lifecycleScope.launch {
+                try {
+                    Toast.makeText(requireContext(), "Clearing old data and fetching fresh online prayer times...", Toast.LENGTH_SHORT).show()
+                    val prayerTimes = PrayerTimesManager.clearAllStoredDataAndFetchFresh(requireContext())
+                    if (prayerTimes != null) {
+                        Toast.makeText(requireContext(), "Fresh prayer times loaded for ${prayerTimes.location}!", Toast.LENGTH_LONG).show()
+                        // Add a small delay to ensure data is properly saved
+                        delay(1000)
+                    } else {
+                        Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
 
         binding.rateButton.setOnClickListener {

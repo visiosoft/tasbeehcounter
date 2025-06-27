@@ -53,6 +53,7 @@ class NamazFragment : Fragment() {
     private var quoteChangeJob: Job? = null
     private var currentQuoteIndex = 0
     private var isEnglish = true
+    private var isRefreshingData = false // Flag to prevent onResume from overriding fresh data
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -396,11 +397,11 @@ class NamazFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Automatically refresh location and prayer times when fragment resumes
-        if (isLocationPermissionGranted()) {
+        // Only refresh if we're not currently refreshing data
+        if (!isRefreshingData && isLocationPermissionGranted()) {
             lifecycleScope.launch {
                 try {
-                    val prayerTimes = EnhancedPrayerTimesManager.getPrayerTimesForToday(requireContext())
+                    val prayerTimes = PrayerTimesManager.getPrayerTimesForToday(requireContext())
                     if (prayerTimes != null) {
                         withContext(Dispatchers.Main) {
                             if (isAdded && !isDetached && _binding != null) {
@@ -423,42 +424,49 @@ class NamazFragment : Fragment() {
     }
 
     private fun refreshLocationAndPrayerTimes() {
-        showLocationNotification("Updating Location", "Getting your current location and prayer times...")
+        showLocationNotification("Updating Location", "Clearing old data and fetching fresh accurate prayer times...")
         
         lifecycleScope.launch {
             try {
-                val prayerTimes = EnhancedPrayerTimesManager.forceRefreshLocationAndPrayerTimes(requireContext())
+                isRefreshingData = true // Set flag to prevent onResume interference
+                
+                // Clear all stored data and fetch fresh online data
+                val prayerTimes = PrayerTimesManager.clearAllStoredDataAndFetchFresh(requireContext())
                 if (prayerTimes != null) {
                     // Update UI with new prayer times
                     withContext(Dispatchers.Main) {
                         if (isAdded && !isDetached && _binding != null) {
                             updateLocationText(prayerTimes.location)
                             updatePrayerTimesFromEnhanced(prayerTimes)
-                            showLocationNotification("Location Updated", "Prayer times updated for ${prayerTimes.location}")
-                            Toast.makeText(requireContext(), "Location and prayer times refreshed!", Toast.LENGTH_SHORT).show()
+                            showLocationNotification("Fresh Data Loaded", "Prayer times updated with fresh online data for ${prayerTimes.location}")
+                            Toast.makeText(requireContext(), "Fresh prayer times loaded from online API!", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
                         if (isAdded && !isDetached) {
-                            showLocationNotification("Update Failed", "Could not refresh location and prayer times")
-                            Toast.makeText(requireContext(), "Failed to refresh location and prayer times", Toast.LENGTH_LONG).show()
+                            showLocationNotification("Update Failed", "Could not fetch fresh online data")
+                            Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     if (isAdded && !isDetached) {
-                        showLocationNotification("Update Error", "Error refreshing location and prayer times")
+                        showLocationNotification("Update Error", "Error fetching fresh online data")
                         Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
                 Log.e("NamazFragment", "Error refreshing location and prayer times", e)
+            } finally {
+                // Reset flag after a delay to allow UI to settle
+                delay(2000) // 2 seconds delay
+                isRefreshingData = false
             }
         }
     }
 
-    private fun updatePrayerTimesFromEnhanced(prayerTimes: EnhancedPrayerTimesManager.PrayerTimes) {
+    private fun updatePrayerTimesFromEnhanced(prayerTimes: PrayerTimesManager.PrayerTimes) {
         _binding?.let { binding ->
             binding.namazDateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(Date())
             binding.fajrTime.text = formatTimeForDisplay(prayerTimes.fajr)
@@ -486,7 +494,7 @@ class NamazFragment : Fragment() {
         }
     }
 
-    private fun getNextPrayer(prayerTimes: EnhancedPrayerTimesManager.PrayerTimes): String {
+    private fun getNextPrayer(prayerTimes: PrayerTimesManager.PrayerTimes): String {
         val currentTime = Calendar.getInstance()
         val currentHour = currentTime.get(Calendar.HOUR_OF_DAY)
         val currentMinute = currentTime.get(Calendar.MINUTE)
