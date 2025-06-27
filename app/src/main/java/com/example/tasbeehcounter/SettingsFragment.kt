@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,8 +15,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.tasbeehcounter.databinding.FragmentSettingsBinding
 import com.google.android.material.switchmaterial.SwitchMaterial
+import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
@@ -190,7 +193,7 @@ class SettingsFragment : Fragment() {
         binding.testMissedTasbeehButton.setOnClickListener {
             val notificationService = NotificationService()
             notificationService.testMissedTasbeehNotification(requireContext())
-            Toast.makeText(requireContext(), "Test missed tasbeeh notification sent!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Test missed tasbeeh notification with bilingual quote sent!", Toast.LENGTH_SHORT).show()
         }
 
         binding.rateButton.setOnClickListener {

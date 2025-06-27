@@ -13,8 +13,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -23,10 +21,12 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
-object PrayerTimesManager {
-    private const val TAG = "PrayerTimesManager"
-    private const val PRAYER_TIMES_KEY = "prayer_times"
+object EnhancedPrayerTimesManager {
+    private const val TAG = "EnhancedPrayerTimesManager"
+    private const val PRAYER_TIMES_KEY = "enhanced_prayer_times"
     private const val LAST_FETCH_DATE_KEY = "last_fetch_date"
     private const val LAST_LOCATION_KEY = "last_location"
     private const val API_BASE_URL = "http://api.aladhan.com/v1/timings"
@@ -128,7 +128,7 @@ object PrayerTimesManager {
     }
 
     /**
-     * Get current location using GPS
+     * Get current location using GPS with improved accuracy
      */
     private suspend fun getCurrentLocation(context: Context): LocationData? {
         return withContext(Dispatchers.IO) {
@@ -149,19 +149,46 @@ object PrayerTimesManager {
 
                 val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
                 
-                // Try to get current location using suspendCoroutine
+                // Try to get current location with better accuracy settings
                 val location = suspendCoroutine<Location?> { continuation ->
                     try {
+                        // First try to get high accuracy location
                         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                             .addOnSuccessListener { location ->
-                                continuation.resume(location)
+                                if (location != null && isLocationAccurate(location)) {
+                                    Log.d(TAG, "Got accurate location: ${location.latitude}, ${location.longitude}")
+                                    continuation.resume(location)
+                                } else {
+                                    Log.w(TAG, "Location not accurate enough, trying last known location")
+                                    // Try last known location
+                                    fusedLocationClient.lastLocation
+                                        .addOnSuccessListener { lastLocation ->
+                                            if (lastLocation != null && isLocationAccurate(lastLocation)) {
+                                                Log.d(TAG, "Using accurate last known location: ${lastLocation.latitude}, ${lastLocation.longitude}")
+                                                continuation.resume(lastLocation)
+                                            } else {
+                                                Log.w(TAG, "Last known location not accurate, using any available location")
+                                                continuation.resume(location ?: lastLocation)
+                                            }
+                                        }
+                                        .addOnFailureListener { lastException ->
+                                            Log.e(TAG, "Failed to get last known location", lastException)
+                                            continuation.resume(location)
+                                        }
+                                }
                             }
                             .addOnFailureListener { exception ->
                                 Log.w(TAG, "Failed to get current location, trying last known location", exception)
                                 // Try last known location
                                 fusedLocationClient.lastLocation
                                     .addOnSuccessListener { lastLocation ->
-                                        continuation.resume(lastLocation)
+                                        if (lastLocation != null && isLocationAccurate(lastLocation)) {
+                                            Log.d(TAG, "Using last known location: ${lastLocation.latitude}, ${lastLocation.longitude}")
+                                            continuation.resume(lastLocation)
+                                        } else {
+                                            Log.w(TAG, "Last known location not accurate")
+                                            continuation.resume(lastLocation)
+                                        }
                                     }
                                     .addOnFailureListener { lastException ->
                                         Log.e(TAG, "Failed to get last known location", lastException)
@@ -175,11 +202,14 @@ object PrayerTimesManager {
                 }
 
                 if (location != null) {
-                    // Get city name from coordinates
+                    // Get city name from coordinates with better error handling
                     val cityName = getCityNameFromCoordinates(location.latitude, location.longitude)
                     val locationData = LocationData(location.latitude, location.longitude, cityName)
                     
-                    Log.d(TAG, "Got location: ${location.latitude}, ${location.longitude}, $cityName")
+                    Log.d(TAG, "Final location: ${location.latitude}, ${location.longitude}, $cityName")
+                    Log.d(TAG, "Location accuracy: ${location.accuracy} meters")
+                    Log.d(TAG, "Location provider: ${location.provider}")
+                    
                     return@withContext locationData
                 } else {
                     Log.w(TAG, "Location is null, using last saved location")
@@ -191,6 +221,13 @@ object PrayerTimesManager {
                 return@withContext getLastSavedLocation(context)
             }
         }
+    }
+
+    /**
+     * Check if location is accurate enough (within 100 meters)
+     */
+    private fun isLocationAccurate(location: Location): Boolean {
+        return location.accuracy <= 100f && location.latitude != 0.0 && location.longitude != 0.0
     }
 
     /**
@@ -247,15 +284,18 @@ object PrayerTimesManager {
     }
 
     /**
-     * Get city name from coordinates using reverse geocoding
+     * Get city name from coordinates using reverse geocoding with improved accuracy
      */
     private suspend fun getCityNameFromCoordinates(latitude: Double, longitude: Double): String {
         return withContext(Dispatchers.IO) {
             try {
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&accept-language=en&zoom=10"
+                // Use a more detailed zoom level for better accuracy
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&accept-language=en&zoom=12&addressdetails=1"
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.setRequestProperty("User-Agent", "TasbeehCounter/1.0")
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
 
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -271,11 +311,21 @@ object PrayerTimesManager {
                     val json = JSONObject(response.toString())
                     val address = json.getJSONObject("address")
                     
-                    return@withContext address.optString("city") 
+                    // Try multiple address fields in order of preference
+                    val cityName = address.optString("city") 
                         ?: address.optString("town") 
-                        ?: address.optString("village") 
+                        ?: address.optString("village")
+                        ?: address.optString("suburb")
+                        ?: address.optString("county")
+                        ?: address.optString("state")
                         ?: "Unknown Location"
+                    
+                    Log.d(TAG, "Reverse geocoding result: $cityName")
+                    Log.d(TAG, "Full address: ${json.optString("display_name", "Unknown")}")
+                    
+                    return@withContext cityName
                 } else {
+                    Log.e(TAG, "Reverse geocoding failed with response code: $responseCode")
                     return@withContext "Unknown Location"
                 }
                 
@@ -348,58 +398,65 @@ object PrayerTimesManager {
         }
     }
 
-    // Legacy methods for backward compatibility
-    fun downloadAndSavePrayerTimes(context: Context) {
-        // This method is now deprecated, use getPrayerTimesForToday instead
-        Log.w(TAG, "downloadAndSavePrayerTimes is deprecated, use getPrayerTimesForToday instead")
+    /**
+     * Force refresh prayer times (useful for testing)
+     */
+    suspend fun forceRefreshPrayerTimes(context: Context): PrayerTimes? {
+        val sharedPreferences = context.getSharedPreferences("TasbeehPrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().remove(LAST_FETCH_DATE_KEY).apply()
+        return getPrayerTimesForToday(context)
     }
 
-    fun getNextFajrTime(context: Context): Long {
+    /**
+     * Force refresh location and prayer times
+     */
+    suspend fun forceRefreshLocationAndPrayerTimes(context: Context): PrayerTimes? {
+        Log.d(TAG, "Force refreshing location and prayer times")
+        
+        // Clear cached location to force new location fetch
+        val sharedPreferences = context.getSharedPreferences("TasbeehPrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit()
+            .remove(LAST_FETCH_DATE_KEY)
+            .remove(LAST_LOCATION_KEY)
+            .apply()
+        
+        return getPrayerTimesForToday(context)
+    }
+
+    /**
+     * Get debug information about current location and prayer times
+     */
+    fun getDebugInfo(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences("TasbeehPrefs", Context.MODE_PRIVATE)
+        val lastFetchDate = sharedPreferences.getString(LAST_FETCH_DATE_KEY, "Never")
+        val lastLocationJson = sharedPreferences.getString(LAST_LOCATION_KEY, "None")
+        val prayerTimesJson = sharedPreferences.getString(PRAYER_TIMES_KEY, "[]")
+        
         val prayerTimes = getPrayerTimes(context)
         val today = dateFormat.format(Calendar.getInstance().time)
         val todayPrayerTimes = prayerTimes.find { it.date == today }
-
-        if (todayPrayerTimes != null) {
-            val calendar = Calendar.getInstance()
-            val fajrTime = todayPrayerTimes.fajr.split(":")
-            calendar.set(Calendar.HOUR_OF_DAY, fajrTime[0].toInt())
-            calendar.set(Calendar.MINUTE, fajrTime[1].toInt())
-            calendar.set(Calendar.SECOND, 0)
-
-            if (calendar.timeInMillis <= System.currentTimeMillis()) {
-                calendar.add(Calendar.DAY_OF_MONTH, 1)
-            }
-
-            return calendar.timeInMillis
-        }
-
-        // If no prayer times found, return next day at 5 AM
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 5)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        return calendar.timeInMillis
+        
+        return """
+            Debug Information:
+            Last Fetch Date: $lastFetchDate
+            Last Location: $lastLocationJson
+            Today's Date: $today
+            Today's Prayer Times: ${todayPrayerTimes ?: "Not found"}
+            Total Cached Prayer Times: ${prayerTimes.size}
+            Internet Available: ${isInternetAvailable()}
+        """.trimIndent()
     }
 
-    fun getCurrentPrayerTime(context: Context): String {
-        val prayerTimes = getPrayerTimes(context)
-        val today = dateFormat.format(Calendar.getInstance().time)
-        val todayPrayerTimes = prayerTimes.find { it.date == today } ?: return ""
-
-        val currentTime = Calendar.getInstance()
-        val currentHour = currentTime.get(Calendar.HOUR_OF_DAY)
-        val currentMinute = currentTime.get(Calendar.MINUTE)
-        val currentTimeString = String.format("%02d:%02d", currentHour, currentMinute)
-
-        return when {
-            currentTimeString < todayPrayerTimes.fajr -> "Fajr"
-            currentTimeString < todayPrayerTimes.sunrise -> "Sunrise"
-            currentTimeString < todayPrayerTimes.dhuhr -> "Dhuhr"
-            currentTimeString < todayPrayerTimes.asr -> "Asr"
-            currentTimeString < todayPrayerTimes.maghrib -> "Maghrib"
-            currentTimeString < todayPrayerTimes.isha -> "Isha"
-            else -> "Fajr"
-        }
+    /**
+     * Clear all cached prayer times
+     */
+    fun clearCachedPrayerTimes(context: Context) {
+        val sharedPreferences = context.getSharedPreferences("TasbeehPrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit()
+            .remove(PRAYER_TIMES_KEY)
+            .remove(LAST_FETCH_DATE_KEY)
+            .remove(LAST_LOCATION_KEY)
+            .apply()
+        Log.d(TAG, "Cleared all cached prayer times")
     }
 } 

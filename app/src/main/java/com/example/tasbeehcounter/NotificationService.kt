@@ -43,18 +43,47 @@ class NotificationService {
             "isha" to "Isha"
         )
         
-        // Islamic quotes for missed tasbeeh
+        // Islamic quotes for missed tasbeeh - Bilingual (Pure English + Pure Urdu) for English-speaking Muslims
         val MISSED_TASBEEH_QUOTES = listOf(
-            "You missed your tasbeeh yesterday. Come back and reconnect with dhikr.",
-            "اللہ کی یاد میں دلوں کو سکون ملتا ہے۔ (Allah ki yaad mein dilon ko sukoon milta hai)",
-            "تسبیح اللہ کی یاد کا بہترین ذریعہ ہے۔ (Tasbeeh Allah ki yaad ka behtareen zariya hai)",
-            "ہر دن نیا موقع ہے اللہ کی عبادت کا۔ (Har din naya mauqa hai Allah ki ibadat ka)",
-            "اللہ کی طرف رجوع کرو، وہ تمہاری مدد کرے گا۔ (Allah ki taraf rujoo karo, woh tumhari madad karega)",
-            "تسبیح کی عادت بناؤ، یہ تمہارے لیے بہترین ہے۔ (Tasbeeh ki aadat banao, yeh tumhare liye behtareen hai)",
-            "اللہ کی یاد میں وقت گزارنا دنیا کی ہر چیز سے بہتر ہے۔ (Allah ki yaad mein waqt guzarna duniya ki har cheez se behtar hai)",
-            "بےشک اللہ صبر کرنے والوں کے ساتھ ہے۔ (Beshaq Allah sabr karne walon ke saath hai)",
-            "ہر مشکل کے بعد آسانی ہے۔ (Har mushkil ke baad aasani hai)",
-            "اللہ کی رحمت سے مایوس نہ ہو۔ (Allah ki rehmat se mayoos na ho)"
+            "You missed your tasbeeh yesterday. Come back and reconnect with dhikr.\nاللہ کی یاد میں دلوں کو سکون ملتا ہے۔",
+            
+            "Remember Allah in abundance, for He is the source of peace.\nتسبیح اللہ کی یاد کا بہترین ذریعہ ہے۔",
+            
+            "Every day is a new opportunity to worship Allah.\nہر دن نیا موقع ہے اللہ کی عبادت کا۔",
+            
+            "Turn to Allah, He will help you.\nاللہ کی طرف رجوع کرو، وہ تمہاری مدد کرے گا۔",
+            
+            "Make tasbeeh a habit, it's the best for you.\nتسبیح کی عادت بناؤ، یہ تمہارے لیے بہترین ہے۔",
+            
+            "Spending time in Allah's remembrance is better than everything in this world.\nاللہ کی یاد میں وقت گزارنا دنیا کی ہر چیز سے بہتر ہے۔",
+            
+            "Indeed, Allah is with those who are patient.\nبےشک اللہ صبر کرنے والوں کے ساتھ ہے۔",
+            
+            "After every difficulty comes ease.\nہر مشکل کے بعد آسانی ہے۔",
+            
+            "Don't lose hope in Allah's mercy.\nاللہ کی رحمت سے مایوس نہ ہو۔",
+            
+            "The best of deeds is to remember Allah.\nسب سے بہترین عمل اللہ کی یاد ہے۔",
+            
+            "Be patient with Allah, for Allah is with the patient.\nاللہ تعالیٰ کے ساتھ صبر کرو، بےشک اللہ صبر کرنے والوں کے ساتھ ہے۔",
+            
+            "Surely with hardship comes ease.\nبےشک مشکل کے ساتھ آسانی ہے۔",
+            
+            "The best among you are those with the best character.\nتم میں سے بہترین وہ ہیں جو اخلاق میں بہترین ہیں۔",
+            
+            "Whoever believes in Allah and the Last Day, let him speak good or remain silent.\nجو اللہ اور آخرت پر ایمان رکھتا ہے وہ اچھی بات کہے یا خاموش رہے۔",
+            
+            "Allah does not burden a soul beyond its capacity.\nاللہ کسی جان پر اس کی طاقت سے زیادہ بوجھ نہیں ڈالتا۔",
+            
+            "The most beloved to Allah is the one who is most beneficial to people.\nاللہ کے نزدیک سب سے محبوب وہ شخص ہے جو لوگوں کو سب سے زیادہ فائدہ پہنچائے۔",
+            
+            "Indeed, We have created man in the best form.\nبےشک ہم نے انسان کو بہترین ساخت میں پیدا کیا۔",
+            
+            "The strong person is not the one who can wrestle someone down, but the strong person is the one who can control himself when he is angry.\nطاقتور وہ نہیں جو کسی کو پچھاڑ دے، بلکہ طاقتور وہ ہے جو غصے میں اپنے آپ پر قابو رکھے۔",
+            
+            "Prayer is the ascension of the believer.\nنماز مومن کی معراج ہے۔",
+            
+            "The fruit of patience is sweet.\nصبر کا پھل میٹھا ہوتا ہے۔"
         )
         
         // Prayer reminder messages
@@ -174,6 +203,11 @@ class NotificationService {
         // Select random quote
         val randomQuote = MISSED_TASBEEH_QUOTES.random()
         
+        // Split the quote into English and Urdu parts for better display
+        val quoteParts = randomQuote.split("\n")
+        val englishPart = quoteParts.firstOrNull() ?: randomQuote
+        val urduPart = if (quoteParts.size > 1) quoteParts[1] else ""
+        
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -188,8 +222,9 @@ class NotificationService {
         val notification = NotificationCompat.Builder(context, CHANNEL_MISSED_TASBEEH)
             .setSmallIcon(R.drawable.ic_tasbeeh)
             .setContentTitle("Missed Tasbeeh Reminder")
-            .setContentText(randomQuote)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(randomQuote))
+            .setContentText(englishPart)
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText(if (urduPart.isNotEmpty()) "$englishPart\n\n$urduPart" else englishPart))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -498,11 +533,11 @@ class NotificationService {
     }
     
     /**
-     * Test method to show missed tasbeeh notification
+     * Test method to show missed tasbeeh notification with bilingual quotes (English + Urdu)
      */
     fun testMissedTasbeehNotification(context: Context) {
         showMissedTasbeehNotification(context)
-        Log.d(TAG, "Test missed tasbeeh notification sent")
+        Log.d(TAG, "Test missed tasbeeh notification sent with bilingual quote")
     }
 }
 

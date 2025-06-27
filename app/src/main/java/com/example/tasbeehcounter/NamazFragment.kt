@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.batoulapps.adhan.CalculationMethod
 import com.batoulapps.adhan.CalculationParameters
 import com.batoulapps.adhan.Coordinates
@@ -125,9 +127,15 @@ class NamazFragment : Fragment() {
             if (!isLocationPermissionGranted()) {
                 requestLocationPermission()
             } else {
-                getCurrentLocation()
-                showLocationNotification("Updating Location", "Getting your current location...")
+                // Use enhanced prayer times manager to refresh location and prayer times
+                refreshLocationAndPrayerTimes()
             }
+        }
+        
+        // Make quotes card clickable for tasbeeh counting
+        binding.quotesCard.setOnClickListener {
+            // Count tasbeeh when quotes card is tapped
+            incrementTasbeehCount()
         }
     }
 
@@ -388,9 +396,23 @@ class NamazFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Automatically refresh location when fragment resumes
+        // Automatically refresh location and prayer times when fragment resumes
         if (isLocationPermissionGranted()) {
-            getCurrentLocation()
+            lifecycleScope.launch {
+                try {
+                    val prayerTimes = EnhancedPrayerTimesManager.getPrayerTimesForToday(requireContext())
+                    if (prayerTimes != null) {
+                        withContext(Dispatchers.Main) {
+                            if (isAdded && !isDetached && _binding != null) {
+                                updateLocationText(prayerTimes.location)
+                                updatePrayerTimesFromEnhanced(prayerTimes)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("NamazFragment", "Error getting prayer times on resume", e)
+                }
+            }
         }
     }
 
@@ -398,5 +420,123 @@ class NamazFragment : Fragment() {
         super.onDestroyView()
         stopAutoQuoteChange()
         _binding = null
+    }
+
+    private fun refreshLocationAndPrayerTimes() {
+        showLocationNotification("Updating Location", "Getting your current location and prayer times...")
+        
+        lifecycleScope.launch {
+            try {
+                val prayerTimes = EnhancedPrayerTimesManager.forceRefreshLocationAndPrayerTimes(requireContext())
+                if (prayerTimes != null) {
+                    // Update UI with new prayer times
+                    withContext(Dispatchers.Main) {
+                        if (isAdded && !isDetached && _binding != null) {
+                            updateLocationText(prayerTimes.location)
+                            updatePrayerTimesFromEnhanced(prayerTimes)
+                            showLocationNotification("Location Updated", "Prayer times updated for ${prayerTimes.location}")
+                            Toast.makeText(requireContext(), "Location and prayer times refreshed!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        if (isAdded && !isDetached) {
+                            showLocationNotification("Update Failed", "Could not refresh location and prayer times")
+                            Toast.makeText(requireContext(), "Failed to refresh location and prayer times", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (isAdded && !isDetached) {
+                        showLocationNotification("Update Error", "Error refreshing location and prayer times")
+                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                Log.e("NamazFragment", "Error refreshing location and prayer times", e)
+            }
+        }
+    }
+
+    private fun updatePrayerTimesFromEnhanced(prayerTimes: EnhancedPrayerTimesManager.PrayerTimes) {
+        _binding?.let { binding ->
+            binding.namazDateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(Date())
+            binding.fajrTime.text = formatTimeForDisplay(prayerTimes.fajr)
+            binding.dhuhrTime.text = formatTimeForDisplay(prayerTimes.dhuhr)
+            binding.asrTime.text = formatTimeForDisplay(prayerTimes.asr)
+            binding.maghribTime.text = formatTimeForDisplay(prayerTimes.maghrib)
+            binding.ishaTime.text = formatTimeForDisplay(prayerTimes.isha)
+
+            // Show next prayer time
+            val nextPrayer = getNextPrayer(prayerTimes)
+            binding.namazNextPrayerText.text = "Next Prayer: $nextPrayer"
+        }
+    }
+
+    private fun formatTimeForDisplay(timeString: String): String {
+        return try {
+            val timeParts = timeString.split(":")
+            val hour = timeParts[0].toInt()
+            val minute = timeParts[1].toInt()
+            val amPm = if (hour < 12) "AM" else "PM"
+            val displayHour = if (hour == 0) 12 else if (hour > 12) hour - 12 else hour
+            String.format("%d:%02d %s", displayHour, minute, amPm)
+        } catch (e: Exception) {
+            timeString // Return original if parsing fails
+        }
+    }
+
+    private fun getNextPrayer(prayerTimes: EnhancedPrayerTimesManager.PrayerTimes): String {
+        val currentTime = Calendar.getInstance()
+        val currentHour = currentTime.get(Calendar.HOUR_OF_DAY)
+        val currentMinute = currentTime.get(Calendar.MINUTE)
+        val currentTimeInMinutes = currentHour * 60 + currentMinute
+
+        val prayerTimeMap = mapOf(
+            "Fajr" to prayerTimes.fajr,
+            "Dhuhr" to prayerTimes.dhuhr,
+            "Asr" to prayerTimes.asr,
+            "Maghrib" to prayerTimes.maghrib,
+            "Isha" to prayerTimes.isha
+        )
+
+        var nextPrayer = "Fajr (Tomorrow)"
+        var minTimeDiff = Int.MAX_VALUE
+
+        for ((prayer, timeString) in prayerTimeMap) {
+            val timeParts = timeString.split(":")
+            val prayerHour = timeParts[0].toInt()
+            val prayerMinute = timeParts[1].toInt()
+            val prayerTimeInMinutes = prayerHour * 60 + prayerMinute
+
+            val timeDiff = if (prayerTimeInMinutes > currentTimeInMinutes) {
+                prayerTimeInMinutes - currentTimeInMinutes
+            } else {
+                (24 * 60 - currentTimeInMinutes) + prayerTimeInMinutes
+            }
+
+            if (timeDiff < minTimeDiff) {
+                minTimeDiff = timeDiff
+                nextPrayer = prayer
+            }
+        }
+
+        return nextPrayer
+    }
+
+    private fun incrementTasbeehCount() {
+        // Get current tasbeeh count from SharedPreferences
+        val sharedPreferences = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE)
+        val currentCount = sharedPreferences.getInt("tasbeeh_count", 0)
+        val newCount = currentCount + 1
+        
+        // Save updated count
+        sharedPreferences.edit().putInt("tasbeeh_count", newCount).apply()
+        
+        // Update last tasbeeh timestamp for missed tasbeeh notifications
+        NotificationService().updateLastTasbeehTimestamp(requireContext())
+        
+        // Show a brief toast to confirm the count
+        Toast.makeText(requireContext(), "Tasbeeh count: $newCount", Toast.LENGTH_SHORT).show()
     }
 } 

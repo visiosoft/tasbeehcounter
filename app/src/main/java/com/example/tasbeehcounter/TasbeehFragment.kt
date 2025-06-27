@@ -247,6 +247,13 @@ class TasbeehFragment : Fragment() {
         binding.nextQuoteButton.setOnClickListener {
             showNextQuote()
         }
+        
+        // Make quote card clickable for tasbeeh counting
+        binding.quoteCard.setOnClickListener {
+            if (isCounting) {
+                incrementCount()
+            }
+        }
     }
 
     private fun showPreviousQuote() {
