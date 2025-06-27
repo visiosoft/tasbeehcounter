@@ -69,11 +69,18 @@ object PrayerTimesManager {
                     Log.d(TAG, "Internet available, fetching fresh prayer times based on current location")
                     return@withContext fetchFreshDataForToday(context, today)
                 } else {
-                    // Only use stored data when offline
+                    // Use stored data when offline
                     Log.d(TAG, "No internet available, using stored data for today")
                     val storedPrayerTimes = getPrayerTimes(context)
                     val todayPrayerTimes = storedPrayerTimes.find { it.date == today }
-                    return@withContext todayPrayerTimes
+                    
+                    if (todayPrayerTimes != null) {
+                        Log.d(TAG, "Using stored prayer times for today: ${todayPrayerTimes.location}")
+                        return@withContext todayPrayerTimes
+                    } else {
+                        Log.d(TAG, "No stored prayer times found for today")
+                        return@withContext null
+                    }
                 }
                 
             } catch (e: Exception) {
@@ -101,11 +108,13 @@ object PrayerTimesManager {
                 // Fetch prayer times for current location
                 val prayerTimes = fetchPrayerTimesFromAPI(currentLocation, date)
                 if (prayerTimes != null) {
-                    // Store the fresh data
+                    // Clear old data and store the fresh data
+                    clearCachedData(context)
                     savePrayerTimes(context, listOf(prayerTimes))
                     // Also save the current location
                     saveLastLocation(context, currentLocation)
                     Log.d(TAG, "Successfully fetched and stored fresh prayer times for today: ${prayerTimes.location}")
+                    Log.d(TAG, "Prayer times for ${currentLocation.cityName}: Fajr=${prayerTimes.fajr}, Sunrise=${prayerTimes.sunrise}, Dhuhr=${prayerTimes.dhuhr}, Asr=${prayerTimes.asr}, Maghrib=${prayerTimes.maghrib}, Isha=${prayerTimes.isha}")
                     return@withContext prayerTimes
                 } else {
                     Log.e(TAG, "Failed to fetch prayer times from API")
@@ -228,7 +237,8 @@ object PrayerTimesManager {
     private suspend fun fetchPrayerTimesFromAPI(location: LocationData, date: String): PrayerTimes? {
         return withContext(Dispatchers.IO) {
             try {
-                val url = "$API_BASE_URL/$date?latitude=${location.latitude}&longitude=${location.longitude}&method=2"
+                val url = "$API_BASE_URL/$date?latitude=${location.latitude}&longitude=${location.longitude}&method=1"
+                Log.d(TAG, "Fetching prayer times from: $url")
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 10000
@@ -261,6 +271,7 @@ object PrayerTimesManager {
                     )
 
                     Log.d(TAG, "Successfully fetched prayer times from API")
+                    Log.d(TAG, "Prayer times for ${location.cityName}: Fajr=${prayerTimes.fajr}, Sunrise=${prayerTimes.sunrise}, Dhuhr=${prayerTimes.dhuhr}, Asr=${prayerTimes.asr}, Maghrib=${prayerTimes.maghrib}, Isha=${prayerTimes.isha}")
                     return@withContext prayerTimes
                 } else {
                     Log.e(TAG, "API request failed with response code: $responseCode")
@@ -367,6 +378,7 @@ object PrayerTimesManager {
         val sharedPreferences = context.getSharedPreferences("TasbeehPrefs", Context.MODE_PRIVATE)
         val json = gson.toJson(location)
         sharedPreferences.edit().putString(LAST_LOCATION_KEY, json).apply()
+        Log.d(TAG, "Saved last accurate location: ${location.cityName} (${location.latitude}, ${location.longitude})")
     }
 
     private fun getLastSavedLocation(context: Context): LocationData? {
@@ -374,11 +386,15 @@ object PrayerTimesManager {
         val json = sharedPreferences.getString(LAST_LOCATION_KEY, null)
         return if (json != null) {
             try {
-                gson.fromJson(json, LocationData::class.java)
+                val location = gson.fromJson(json, LocationData::class.java)
+                Log.d(TAG, "Retrieved last saved location: ${location.cityName} (${location.latitude}, ${location.longitude})")
+                location
             } catch (e: Exception) {
+                Log.e(TAG, "Error parsing last saved location", e)
                 null
             }
         } else {
+            Log.d(TAG, "No last saved location found")
             null
         }
     }
@@ -734,6 +750,78 @@ object PrayerTimesManager {
                 Log.e(TAG, "Error clearing stored data and fetching fresh", e)
                 return@withContext null
             }
+        }
+    }
+
+    /**
+     * Test different prayer time calculation methods to find the most accurate one
+     * Methods: 1=Karachi, 2=Egypt, 3=North America, 4=Muslim World League, 5=Umm Al-Qura, 6=Fixed Isha
+     */
+    suspend fun testPrayerTimeMethods(context: Context): Map<Int, PrayerTimes?> {
+        return withContext(Dispatchers.IO) {
+            val results = mutableMapOf<Int, PrayerTimes?>()
+            val today = dateFormat.format(Calendar.getInstance().time)
+            
+            // Get current location
+            val currentLocation = getCurrentLocation(context)
+            if (currentLocation == null) {
+                Log.e(TAG, "Failed to get current location for method testing")
+                return@withContext results
+            }
+            
+            Log.d(TAG, "Testing prayer time methods for location: ${currentLocation.cityName}")
+            
+            // Test methods 1-6
+            for (method in 1..6) {
+                try {
+                    val url = "$API_BASE_URL/$today?latitude=${currentLocation.latitude}&longitude=${currentLocation.longitude}&method=$method"
+                    Log.d(TAG, "Testing method $method: $url")
+                    
+                    val connection = URL(url).openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                        val response = StringBuilder()
+                        var line: String?
+                        
+                        while (reader.readLine().also { line = it } != null) {
+                            response.append(line)
+                        }
+                        reader.close()
+
+                        val jsonResponse = JSONObject(response.toString())
+                        val data = jsonResponse.getJSONObject("data")
+                        val timings = data.getJSONObject("timings")
+
+                        val prayerTimes = PrayerTimes(
+                            date = today,
+                            fajr = timings.getString("Fajr"),
+                            sunrise = timings.getString("Sunrise"),
+                            dhuhr = timings.getString("Dhuhr"),
+                            asr = timings.getString("Asr"),
+                            maghrib = timings.getString("Maghrib"),
+                            isha = timings.getString("Isha"),
+                            location = "${currentLocation.cityName} (Method $method)"
+                        )
+                        
+                        results[method] = prayerTimes
+                        Log.d(TAG, "Method $method: Fajr=${prayerTimes.fajr}, Dhuhr=${prayerTimes.dhuhr}, Maghrib=${prayerTimes.maghrib}")
+                    } else {
+                        Log.e(TAG, "Method $method failed with response code: $responseCode")
+                        results[method] = null
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error testing method $method", e)
+                    results[method] = null
+                }
+            }
+            
+            Log.d(TAG, "Method testing completed. Results: ${results.keys.size} successful")
+            return@withContext results
         }
     }
 } 
