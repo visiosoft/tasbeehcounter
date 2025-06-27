@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,10 +24,10 @@ class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var vibrationSwitch: SwitchMaterial
-    private lateinit var darkModeSwitch: SwitchMaterial
     private lateinit var notificationSwitch: SwitchMaterial
     private lateinit var autoLocationSwitch: SwitchMaterial
+    private lateinit var vibrationSwitch: SwitchMaterial
+    private lateinit var darkModeSwitch: SwitchMaterial
     private lateinit var exactAlarmButton: com.google.android.material.button.MaterialButton
 
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -79,18 +78,18 @@ class SettingsFragment : Fragment() {
     }
 
     private fun initializeSwitches() {
-        vibrationSwitch = binding.vibrationSwitch
-        darkModeSwitch = binding.darkModeSwitch
         notificationSwitch = binding.notificationSwitch
         autoLocationSwitch = binding.autoLocationSwitch
+        vibrationSwitch = binding.vibrationSwitch
+        darkModeSwitch = binding.darkModeSwitch
         exactAlarmButton = binding.exactAlarmButton
 
         // Load saved preferences
         val prefs = requireContext().getSharedPreferences("Settings", 0)
-        vibrationSwitch.isChecked = prefs.getBoolean("vibration", true)
-        darkModeSwitch.isChecked = prefs.getBoolean("darkMode", false)
         notificationSwitch.isChecked = prefs.getBoolean("notifications", true)
         autoLocationSwitch.isChecked = prefs.getBoolean("autoLocation", true)
+        vibrationSwitch.isChecked = prefs.getBoolean("vibration", true)
+        darkModeSwitch.isChecked = prefs.getBoolean("darkMode", false)
         
         // Update exact alarm button text based on permission status
         updateExactAlarmButtonText()
@@ -191,57 +190,27 @@ class SettingsFragment : Fragment() {
         }
 
         binding.testPrayerNotificationsButton.setOnClickListener {
-            val notificationService = NotificationService()
-            notificationService.sendPrayerNotificationWithAudio(requireContext(), "fajr")
-            Toast.makeText(requireContext(), "Test prayer notification with audio sent!", Toast.LENGTH_SHORT).show()
+            testPrayerNotifications()
         }
 
         binding.testMissedTasbeehButton.setOnClickListener {
-            val notificationService = NotificationService()
-            notificationService.testMissedTasbeehNotification(requireContext())
-            Toast.makeText(requireContext(), "Test missed tasbeeh notification with bilingual quote sent!", Toast.LENGTH_SHORT).show()
+            testMissedTasbeehAlert()
         }
 
         binding.refreshAccurateLocationButton.setOnClickListener {
-            lifecycleScope.launch {
-                try {
-                    Toast.makeText(requireContext(), "Clearing old data and fetching fresh online prayer times...", Toast.LENGTH_SHORT).show()
-                    val prayerTimes = PrayerTimesManager.clearAllStoredDataAndFetchFresh(requireContext())
-                    if (prayerTimes != null) {
-                        Toast.makeText(requireContext(), "Fresh prayer times loaded for ${prayerTimes.location}!", Toast.LENGTH_LONG).show()
-                        // Add a small delay to ensure data is properly saved
-                        delay(1000)
-                    } else {
-                        Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            }
+            refreshPrayerTimesWithAccurateLocation()
         }
 
         binding.rateButton.setOnClickListener {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("market://details?id=${requireContext().packageName}")
-                })
-            } catch (e: Exception) {
-                startActivity(Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("https://play.google.com/store/apps/details?id=${requireContext().packageName}")
-                })
-            }
+            openPlayStore()
+        }
+
+        binding.shareButton.setOnClickListener {
+            shareApp()
         }
 
         binding.feedbackButton.setOnClickListener {
-            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:") // Add your support email here
-                putExtra(Intent.EXTRA_SUBJECT, "Tasbeeh Counter Feedback")
-            }
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                // Handle case where no email app is available
-            }
+            sendFeedback()
         }
     }
 
@@ -254,5 +223,72 @@ class SettingsFragment : Fragment() {
         super.onResume()
         // Update exact alarm button text when returning from settings
         updateExactAlarmButtonText()
+    }
+
+    private fun refreshPrayerTimesWithAccurateLocation() {
+        lifecycleScope.launch {
+            try {
+                Toast.makeText(requireContext(), "Clearing old data and fetching fresh online prayer times...", Toast.LENGTH_SHORT).show()
+                val prayerTimes = PrayerTimesManager.clearAllStoredDataAndFetchFresh(requireContext())
+                if (prayerTimes != null) {
+                    Toast.makeText(requireContext(), "Fresh prayer times loaded for ${prayerTimes.location}!", Toast.LENGTH_LONG).show()
+                    // Add a small delay to ensure data is properly saved
+                    delay(1000)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun testPrayerNotifications() {
+        val notificationService = NotificationService()
+        notificationService.sendPrayerNotificationWithAudio(requireContext(), "fajr")
+        Toast.makeText(requireContext(), "Test prayer notification with audio sent!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun testMissedTasbeehAlert() {
+        val notificationService = NotificationService()
+        notificationService.testMissedTasbeehNotification(requireContext())
+        Toast.makeText(requireContext(), "Test missed tasbeeh notification with bilingual quote sent!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun openPlayStore() {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse("market://details?id=${requireContext().packageName}")
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback to web browser if Play Store app is not available
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse("https://play.google.com/store/apps/details?id=${requireContext().packageName}")
+            startActivity(intent)
+        }
+    }
+
+    private fun shareApp() {
+        try {
+            val shareIntent = Intent(Intent.ACTION_SEND)
+            shareIntent.type = "text/plain"
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Tasbeeh Counter App")
+            shareIntent.putExtra(Intent.EXTRA_TEXT, "Check out this amazing Tasbeeh Counter app with prayer times and daily dhikr tracking!\n\nDownload it from: https://play.google.com/store/apps/details?id=${requireContext().packageName}")
+            startActivity(Intent.createChooser(shareIntent, "Share via"))
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Error sharing app: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun sendFeedback() {
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO)
+            intent.data = Uri.parse("mailto:infoniaziseo@gmail.com")
+            intent.putExtra(Intent.EXTRA_SUBJECT, "Tasbeeh Counter App Feedback")
+            intent.putExtra(Intent.EXTRA_TEXT, "Dear Developer,\n\nI would like to provide feedback about the Tasbeeh Counter app:\n\n")
+            startActivity(Intent.createChooser(intent, "Send Feedback"))
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Error sending feedback: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 } 
