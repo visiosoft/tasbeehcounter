@@ -39,6 +39,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.net.URL
 import org.json.JSONObject
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 
 class NamazFragment : Fragment() {
     private var _binding: FragmentNamazBinding? = null
@@ -54,6 +57,8 @@ class NamazFragment : Fragment() {
     private var currentQuoteIndex = 0
     private var isEnglish = true
     private var isRefreshingData = false // Flag to prevent onResume from overriding fresh data
+    private var hasShownGpsNetworkError = false // Flag to track if GPS/network error notification was shown
+    private var vibrator: Vibrator? = null
 
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -62,12 +67,12 @@ class NamazFragment : Fragment() {
             permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
                 // Precise location access granted
                 getCurrentLocation()
-                showLocationNotification("Location access granted", "Getting your current location...")
+                // Don't show notification for successful permission grant
             }
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
                 // Only approximate location access granted
                 getCurrentLocation()
-                showLocationNotification("Location access granted", "Getting your current location...")
+                // Don't show notification for successful permission grant
             }
             else -> {
                 // No location access granted
@@ -92,6 +97,16 @@ class NamazFragment : Fragment() {
         setupLocationServices()
         setupUI()
         updateIslamicQuotes()
+        
+        // Initialize vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibrator = vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        
         // Automatically check location permission on start
         checkLocationPermission()
     }
@@ -112,6 +127,22 @@ class NamazFragment : Fragment() {
     }
 
     private fun showLocationNotification(title: String, message: String) {
+        // Check if this is a GPS/network error notification
+        val isGpsNetworkError = title.contains("Location Error", ignoreCase = true) || 
+                               message.contains("GPS", ignoreCase = true) ||
+                               message.contains("network", ignoreCase = true) ||
+                               message.contains("Unable to get location", ignoreCase = true)
+        
+        // If it's a GPS/network error and we've already shown one, don't show another
+        if (isGpsNetworkError && hasShownGpsNetworkError) {
+            return
+        }
+        
+        // If it's a GPS/network error, mark that we've shown it
+        if (isGpsNetworkError) {
+            hasShownGpsNetworkError = true
+        }
+        
         val notification = NotificationCompat.Builder(requireContext(), "location_channel")
             .setSmallIcon(R.drawable.ic_location)
             .setContentTitle(title)
@@ -239,8 +270,11 @@ class NamazFragment : Fragment() {
                             else -> getDefaultMainCity()
                         }
                         updateLocationText(locationText)
-                        showLocationNotification("Location Updated", "Prayer times updated for $locationText")
+                        // Don't show notification for successful location updates to reduce spam
                         updatePrayerTimes()
+                        
+                        // Reset GPS/network error flag since location was successfully obtained
+                        hasShownGpsNetworkError = false
                     }
                 }
             } catch (e: Exception) {
@@ -424,7 +458,10 @@ class NamazFragment : Fragment() {
     }
 
     private fun refreshLocationAndPrayerTimes() {
-        showLocationNotification("Updating Location", "Clearing old data and fetching fresh accurate prayer times...")
+        // Reset GPS/network error flag when user manually refreshes
+        hasShownGpsNetworkError = false
+        
+        // Don't show notification for starting update to reduce spam
         
         lifecycleScope.launch {
             try {
@@ -438,14 +475,17 @@ class NamazFragment : Fragment() {
                         if (isAdded && !isDetached && _binding != null) {
                             updateLocationText(prayerTimes.location)
                             updatePrayerTimesFromEnhanced(prayerTimes)
-                            showLocationNotification("Fresh Data Loaded", "Prayer times updated with fresh online data for ${prayerTimes.location}")
+                            // Don't show notification for successful data loading to reduce spam
                             Toast.makeText(requireContext(), "Fresh prayer times loaded from online API!", Toast.LENGTH_SHORT).show()
+                            
+                            // Reset GPS/network error flag since location was successfully updated
+                            hasShownGpsNetworkError = false
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
                         if (isAdded && !isDetached) {
-                            showLocationNotification("Update Failed", "Could not fetch fresh online data")
+                            // Don't show notification for update failure to reduce spam
                             Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
                         }
                     }
@@ -453,7 +493,7 @@ class NamazFragment : Fragment() {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     if (isAdded && !isDetached) {
-                        showLocationNotification("Update Error", "Error fetching fresh online data")
+                        // Don't show notification for update error to reduce spam
                         Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
@@ -544,7 +584,34 @@ class NamazFragment : Fragment() {
         // Update last tasbeeh timestamp for missed tasbeeh notifications
         NotificationService().updateLastTasbeehTimestamp(requireContext())
         
+        // Add vibration when incrementing tasbeeh count
+        performVibration()
+        
         // Show a brief toast to confirm the count
         Toast.makeText(requireContext(), "Tasbeeh count: $newCount", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun performVibration() {
+        // Check vibration setting from preferences
+        val vibrationEnabled = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE)
+            .getBoolean("vibration", true)
+        
+        if (vibrationEnabled && vibrator != null) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (vibrator?.hasVibrator() == true) {
+                        vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (vibrator?.hasVibrator() == true) {
+                        vibrator?.vibrate(50)
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle vibration error silently
+                Log.e("NamazFragment", "Error during vibration: ${e.message}")
+            }
+        }
     }
 } 

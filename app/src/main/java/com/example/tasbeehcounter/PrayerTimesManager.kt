@@ -38,6 +38,9 @@ object PrayerTimesManager {
     
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val gson = Gson()
+    
+    // Simple cache for reverse geocoding results
+    private val geocodingCache = mutableMapOf<String, String>()
 
     data class PrayerTimes(
         val date: String,
@@ -91,6 +94,86 @@ object PrayerTimesManager {
     }
 
     /**
+     * Get prayer times for offline use - returns stored data for 3 days
+     */
+    suspend fun getPrayerTimesForOffline(context: Context): List<PrayerTimes> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val storedPrayerTimes = getPrayerTimes(context)
+                
+                if (storedPrayerTimes.isNotEmpty()) {
+                    Log.d(TAG, "Returning ${storedPrayerTimes.size} stored prayer times for offline use")
+                    return@withContext storedPrayerTimes
+                } else {
+                    Log.d(TAG, "No stored prayer times available for offline use")
+                    return@withContext emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting offline prayer times", e)
+                return@withContext emptyList()
+            }
+        }
+    }
+
+    /**
+     * Auto-update prayer times when going online
+     */
+    suspend fun autoUpdateWhenOnline(context: Context): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!isInternetAvailable()) {
+                    Log.d(TAG, "No internet available, skipping auto-update")
+                    return@withContext false
+                }
+                
+                Log.d(TAG, "Internet available, performing auto-update")
+                
+                // Get current location
+                val location = getCurrentLocation(context)
+                if (location == null) {
+                    Log.e(TAG, "Failed to get location for auto-update")
+                    return@withContext false
+                }
+                
+                // Fetch prayer times for 3 days (today + next 2 days)
+                val calendar = Calendar.getInstance()
+                val fetchedPrayerTimes = mutableListOf<PrayerTimes>()
+                
+                for (i in 0..2) {
+                    val targetDate = calendar.clone() as Calendar
+                    targetDate.add(Calendar.DAY_OF_MONTH, i)
+                    val dateString = dateFormat.format(targetDate.time)
+                    
+                    val prayerTimes = fetchPrayerTimesFromAPI(location, dateString)
+                    if (prayerTimes != null) {
+                        fetchedPrayerTimes.add(prayerTimes)
+                        Log.d(TAG, "Successfully fetched prayer times for $dateString")
+                    } else {
+                        Log.e(TAG, "Failed to fetch prayer times for $dateString")
+                    }
+                }
+                
+                // Save the fetched data for offline use
+                if (fetchedPrayerTimes.isNotEmpty()) {
+                    savePrayerTimes(context, fetchedPrayerTimes)
+                    saveLastLocation(context, location)
+                    saveLastFetchDate(context, dateFormat.format(Calendar.getInstance().time))
+                    
+                    Log.d(TAG, "Auto-update completed: saved ${fetchedPrayerTimes.size} prayer times")
+                    return@withContext true
+                } else {
+                    Log.e(TAG, "Auto-update failed: no prayer times fetched")
+                    return@withContext false
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during auto-update", e)
+                return@withContext false
+            }
+        }
+    }
+
+    /**
      * Fetch fresh data for today based on current location
      */
     private suspend fun fetchFreshDataForToday(context: Context, date: String): PrayerTimes? {
@@ -113,6 +196,8 @@ object PrayerTimesManager {
                     savePrayerTimes(context, listOf(prayerTimes))
                     // Also save the current location
                     saveLastLocation(context, currentLocation)
+                    // Save the fetch date to prevent immediate re-fetching
+                    saveLastFetchDate(context, date)
                     Log.d(TAG, "Successfully fetched and stored fresh prayer times for today: ${prayerTimes.location}")
                     Log.d(TAG, "Prayer times for ${currentLocation.cityName}: Fajr=${prayerTimes.fajr}, Sunrise=${prayerTimes.sunrise}, Dhuhr=${prayerTimes.dhuhr}, Asr=${prayerTimes.asr}, Maghrib=${prayerTimes.maghrib}, Isha=${prayerTimes.isha}")
                     return@withContext prayerTimes
@@ -145,7 +230,7 @@ object PrayerTimesManager {
     }
 
     /**
-     * Get current location using GPS
+     * Get current location using GPS with optimized performance
      */
     private suspend fun getCurrentLocation(context: Context): LocationData? {
         return withContext(Dispatchers.IO) {
@@ -173,28 +258,40 @@ object PrayerTimesManager {
 
                 val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
                 
-                // Try to get current location using suspendCoroutine
+                // First, try to get last known location immediately (fastest)
+                val lastKnownLocation = suspendCoroutine<Location?> { continuation ->
+                    fusedLocationClient.lastLocation
+                        .addOnSuccessListener { location ->
+                            continuation.resume(location)
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.w(TAG, "Failed to get last known location", exception)
+                            continuation.resume(null)
+                        }
+                }
+                
+                if (lastKnownLocation != null && isLocationAccurate(lastKnownLocation)) {
+                    Log.d(TAG, "Using fast last known location: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
+                    val cityName = getCityNameFromCoordinates(lastKnownLocation.latitude, lastKnownLocation.longitude)
+                    val locationData = LocationData(lastKnownLocation.latitude, lastKnownLocation.longitude, cityName)
+                    return@withContext locationData
+                }
+                
+                // If last known location is not accurate, try current location with timeout
                 val location = suspendCoroutine<Location?> { continuation ->
                     try {
-                        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                        // Use a shorter timeout for faster response
+                        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
                             .addOnSuccessListener { location ->
                                 continuation.resume(location)
                             }
                             .addOnFailureListener { exception ->
-                                Log.w(TAG, "Failed to get current location, trying last known location", exception)
-                                // Try last known location
-                                fusedLocationClient.lastLocation
-                                    .addOnSuccessListener { lastLocation ->
-                                        continuation.resume(lastLocation)
-                                    }
-                                    .addOnFailureListener { lastException ->
-                                        Log.e(TAG, "Failed to get last known location", lastException)
-                                        continuation.resume(null)
-                                    }
+                                Log.w(TAG, "Failed to get current location, using last known", exception)
+                                continuation.resume(lastKnownLocation)
                             }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error getting location", e)
-                        continuation.resume(null)
+                        continuation.resume(lastKnownLocation)
                     }
                 }
 
@@ -232,6 +329,13 @@ object PrayerTimesManager {
     }
 
     /**
+     * Check if location is accurate enough (within 500 meters for faster response)
+     */
+    private fun isLocationAccurate(location: Location): Boolean {
+        return location.accuracy <= 500f && location.latitude != 0.0 && location.longitude != 0.0
+    }
+
+    /**
      * Fetch prayer times from Aladhan API
      */
     private suspend fun fetchPrayerTimesFromAPI(location: LocationData, date: String): PrayerTimes? {
@@ -243,8 +347,8 @@ object PrayerTimesManager {
                 Log.d(TAG, "Fetching prayer times from: $url")
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
+                connection.connectTimeout = 5000  // Reduced from 10000
+                connection.readTimeout = 5000     // Reduced from 10000
 
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -288,15 +392,27 @@ object PrayerTimesManager {
     }
 
     /**
-     * Get city name from coordinates using reverse geocoding
+     * Get city name from coordinates using reverse geocoding with optimized performance
      */
     private suspend fun getCityNameFromCoordinates(latitude: Double, longitude: Double): String {
         return withContext(Dispatchers.IO) {
             try {
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&accept-language=en&zoom=10"
+                // Create cache key from coordinates (rounded to reduce cache size)
+                val cacheKey = "${(latitude * 100).toInt() / 100.0},${(longitude * 100).toInt() / 100.0}"
+                
+                // Check cache first
+                geocodingCache[cacheKey]?.let { cachedCityName ->
+                    Log.d(TAG, "Using cached city name: $cachedCityName for coordinates: $latitude, $longitude")
+                    return@withContext cachedCityName
+                }
+                
+                // Use faster timeout and simpler parameters
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&accept-language=en&zoom=8"
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.setRequestProperty("User-Agent", "TasbeehCounter/1.0")
+                connection.connectTimeout = 3000  // Reduced from 10000
+                connection.readTimeout = 3000     // Reduced from 10000
 
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -319,6 +435,9 @@ object PrayerTimesManager {
                         ?: address.optString("county").takeIf { it.isNotEmpty() }
                         ?: address.optString("state").takeIf { it.isNotEmpty() }
                         ?: "Unknown Location"
+                    
+                    // Cache the result
+                    geocodingCache[cacheKey] = cityName
                     
                     Log.d(TAG, "Resolved city name: $cityName from coordinates: $latitude, $longitude")
                     return@withContext cityName
@@ -371,7 +490,7 @@ object PrayerTimesManager {
         sharedPreferences.edit().putString(LAST_FETCH_DATE_KEY, date).apply()
     }
 
-    private fun getLastFetchDate(context: Context): String? {
+    fun getLastFetchDate(context: Context): String? {
         val sharedPreferences = context.getSharedPreferences("TasbeehPrefs", Context.MODE_PRIVATE)
         return sharedPreferences.getString(LAST_FETCH_DATE_KEY, null)
     }
@@ -514,7 +633,11 @@ object PrayerTimesManager {
             .remove(LAST_FETCH_DATE_KEY)
             .remove(LAST_LOCATION_KEY)
             .apply()
-        Log.d(TAG, "Cleared all cached prayer time data")
+        
+        // Clear geocoding cache as well
+        geocodingCache.clear()
+        
+        Log.d(TAG, "Cleared all cached prayer time data and geocoding cache")
     }
 
     /**
@@ -546,8 +669,8 @@ object PrayerTimesManager {
                 val syncSuccess = mutableListOf<Boolean>()
                 val fetchedPrayerTimes = mutableListOf<PrayerTimes>()
                 
-                // Sync for today and next 3 days
-                for (i in 0..3) {
+                // Sync for today and next 2 days (total 3 days for offline use)
+                for (i in 0..2) {
                     val targetDate = calendar.clone() as Calendar
                     targetDate.add(Calendar.DAY_OF_MONTH, i)
                     val dateString = dateFormat.format(targetDate.time)
@@ -577,16 +700,21 @@ object PrayerTimesManager {
                         }
                     }
                     
-                    // Keep only last 7 days of data
-                    if (existingPrayerTimes.size > 7) {
+                    // Keep only last 3 days of data for offline use
+                    if (existingPrayerTimes.size > 3) {
                         existingPrayerTimes.sortBy { it.date }
-                        while (existingPrayerTimes.size > 7) {
+                        while (existingPrayerTimes.size > 3) {
                             existingPrayerTimes.removeAt(0)
                         }
                     }
                     
                     savePrayerTimes(context, existingPrayerTimes)
                     saveLastLocation(context, location)
+                    
+                    // Save the fetch date to prevent immediate re-fetching
+                    val today = dateFormat.format(Calendar.getInstance().time)
+                    saveLastFetchDate(context, today)
+                    
                     Log.d(TAG, "Saved ${fetchedPrayerTimes.size} prayer times to storage")
                 }
                 
@@ -716,8 +844,8 @@ object PrayerTimesManager {
                 val calendar = Calendar.getInstance()
                 val fetchedPrayerTimes = mutableListOf<PrayerTimes>()
                 
-                // Fetch for today and next 6 days (total 7 days)
-                for (i in 0..6) {
+                // Fetch for today and next 2 days (total 3 days for offline use)
+                for (i in 0..2) {
                     val targetDate = calendar.clone() as Calendar
                     targetDate.add(Calendar.DAY_OF_MONTH, i)
                     val dateString = dateFormat.format(targetDate.time)
@@ -737,10 +865,13 @@ object PrayerTimesManager {
                     saveLastLocation(context, location)
                     saveLastSyncTime(context, System.currentTimeMillis())
                     
+                    // Save the fetch date to prevent immediate re-fetching
+                    val today = dateFormat.format(Calendar.getInstance().time)
+                    saveLastFetchDate(context, today)
+                    
                     Log.d(TAG, "Saved ${fetchedPrayerTimes.size} fresh prayer times from online API")
                     
                     // Return today's prayer times
-                    val today = dateFormat.format(Calendar.getInstance().time)
                     val todayPrayerTimes = fetchedPrayerTimes.find { it.date == today }
                     return@withContext todayPrayerTimes
                 } else {
@@ -903,5 +1034,23 @@ object PrayerTimesManager {
             Log.d(TAG, "Asr method testing completed. Results: ${results.keys.size} successful")
             return@withContext results
         }
+    }
+
+    /**
+     * Check if offline prayer times are available for today
+     */
+    fun hasOfflinePrayerTimes(context: Context): Boolean {
+        val storedPrayerTimes = getPrayerTimes(context)
+        val today = dateFormat.format(Calendar.getInstance().time)
+        return storedPrayerTimes.any { it.date == today }
+    }
+
+    /**
+     * Get today's prayer times for offline use
+     */
+    fun getTodayPrayerTimesOffline(context: Context): PrayerTimes? {
+        val storedPrayerTimes = getPrayerTimes(context)
+        val today = dateFormat.format(Calendar.getInstance().time)
+        return storedPrayerTimes.find { it.date == today }
     }
 } 

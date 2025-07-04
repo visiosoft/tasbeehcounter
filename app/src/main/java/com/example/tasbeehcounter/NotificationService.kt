@@ -254,27 +254,27 @@ class NotificationService {
             // Cancel existing prayer reminders
             cancelExistingPrayerReminders(context)
             
-            // Try to get actual prayer times from PrayerTimesManager
+            // Try to get stored prayer times (works offline)
             val prayerTimes = PrayerTimesManager.getPrayerTimes(context)
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             val todayPrayerTimes = prayerTimes.find { it.date == today }
             
             if (todayPrayerTimes != null) {
-                // Use actual prayer times
+                // Use stored prayer times (works offline)
                 schedulePrayerReminderFromTime(context, "fajr", todayPrayerTimes.fajr)
                 schedulePrayerReminderFromTime(context, "dhuhr", todayPrayerTimes.dhuhr)
                 schedulePrayerReminderFromTime(context, "asr", todayPrayerTimes.asr)
                 schedulePrayerReminderFromTime(context, "maghrib", todayPrayerTimes.maghrib)
                 schedulePrayerReminderFromTime(context, "isha", todayPrayerTimes.isha)
-                Log.d(TAG, "Prayer reminders scheduled using actual prayer times")
+                Log.d(TAG, "Prayer reminders scheduled using stored prayer times (offline compatible)")
             } else {
-                // Use default times if no prayer times available
+                // Use default times if no stored prayer times available
                 schedulePrayerReminder(context, "fajr", 5, 30) // 5:30 AM
                 schedulePrayerReminder(context, "dhuhr", 12, 30) // 12:30 PM
                 schedulePrayerReminder(context, "asr", 15, 30) // 3:30 PM
                 schedulePrayerReminder(context, "maghrib", 18, 30) // 6:30 PM
                 schedulePrayerReminder(context, "isha", 19, 30) // 7:30 PM
-                Log.d(TAG, "Prayer reminders scheduled using default times")
+                Log.d(TAG, "Prayer reminders scheduled using default times (no stored data)")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error scheduling prayer reminders", e)
@@ -584,7 +584,7 @@ class NotificationService {
                 .setContentTitle("$prayerDisplayName Prayer Reminder")
                 .setContentText("$message - Allahu Akbar")
                 .setStyle(NotificationCompat.BigTextStyle()
-                    .bigText("$message\nAllahu Akbar - اللہ اکبر\n(Reminder sent 5 minutes after prayer time started)"))
+                    .bigText("$message\nAllahu Akbar - اللہ اکبر"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)

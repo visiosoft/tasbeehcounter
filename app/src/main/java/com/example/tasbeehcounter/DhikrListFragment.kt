@@ -15,6 +15,10 @@ import android.content.SharedPreferences
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 
 class DhikrListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
@@ -22,6 +26,7 @@ class DhikrListFragment : Fragment() {
     private lateinit var sharedPreferences: SharedPreferences
     private val gson = Gson()
     private var dhikrList = mutableListOf<Dhikr>()
+    private var vibrator: Vibrator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,6 +40,15 @@ class DhikrListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         sharedPreferences = requireContext().getSharedPreferences("DhikrPrefs", Context.MODE_PRIVATE)
+        
+        // Initialize vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibrator = vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
         
         recyclerView = view.findViewById(R.id.dhikrRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
@@ -142,6 +156,30 @@ class DhikrListFragment : Fragment() {
         sharedPreferences.edit().putString("custom_dhikr", json).apply()
     }
 
+    private fun performVibration() {
+        // Check vibration setting from preferences
+        val vibrationEnabled = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE)
+            .getBoolean("vibration", true)
+        
+        if (vibrationEnabled && vibrator != null) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (vibrator?.hasVibrator() == true) {
+                        vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (vibrator?.hasVibrator() == true) {
+                        vibrator?.vibrate(50)
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle vibration error silently
+                android.util.Log.e("DhikrListFragment", "Error during vibration: ${e.message}")
+            }
+        }
+    }
+
     data class Dhikr(
         var arabic: String,
         val translation: String,
@@ -173,6 +211,10 @@ class DhikrListFragment : Fragment() {
                 if (dhikr.currentCount < dhikr.targetCount) {
                     dhikr.currentCount++
                     holder.countText.text = "${dhikr.currentCount}/${dhikr.targetCount}"
+                    
+                    // Add vibration when incrementing dhikr count
+                    performVibration()
+                    
                     if (dhikr.currentCount == dhikr.targetCount) {
                         holder.completeText.visibility = View.VISIBLE
                         holder.incrementButton.isEnabled = false

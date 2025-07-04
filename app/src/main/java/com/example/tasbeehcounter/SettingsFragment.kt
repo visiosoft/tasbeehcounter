@@ -190,7 +190,7 @@ class SettingsFragment : Fragment() {
         }
 
         binding.testPrayerNotificationsButton.setOnClickListener {
-            testPrayerNotifications()
+             testPrayerNotifications()
         }
 
         binding.testMissedTasbeehButton.setOnClickListener {

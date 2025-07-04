@@ -10,6 +10,9 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.tasbeehcounter.databinding.ActivityMainBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -43,6 +46,9 @@ class MainActivity : AppCompatActivity() {
             // Continue without daily check if scheduling fails
         }
         
+        // Auto-update prayer times when online
+        autoUpdatePrayerTimesIfOnline()
+        
         // Setup Navigation
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
@@ -74,5 +80,40 @@ class MainActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        
+        // Auto-update prayer times when app resumes (in case internet became available)
+        autoUpdatePrayerTimesIfOnline()
+    }
+    
+    /**
+     * Auto-update prayer times when online
+     */
+    private fun autoUpdatePrayerTimesIfOnline() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Check if we have stored prayer times
+                val storedPrayerTimes = PrayerTimesManager.getPrayerTimes(this@MainActivity)
+                
+                if (storedPrayerTimes.isEmpty()) {
+                    // No stored data, try to fetch fresh data
+                    android.util.Log.d("MainActivity", "No stored prayer times, attempting to fetch fresh data")
+                    PrayerTimesManager.autoUpdateWhenOnline(this@MainActivity)
+                } else {
+                    // We have stored data, check if it's recent
+                    val lastFetchDate = PrayerTimesManager.getLastFetchDate(this@MainActivity)
+                    val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+                    
+                    if (lastFetchDate != today) {
+                        // Data is old, try to update
+                        android.util.Log.d("MainActivity", "Stored prayer times are old, attempting auto-update")
+                        PrayerTimesManager.autoUpdateWhenOnline(this@MainActivity)
+                    } else {
+                        android.util.Log.d("MainActivity", "Stored prayer times are current, no update needed")
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error during auto-update", e)
+            }
+        }
     }
 }
