@@ -44,29 +44,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Settings"
-                android:textSize="38sp"
-                android:textStyle="bold"
+                android:textSize="32sp"
+                android:textStyle="normal"
                 android:textColor="@color/white"
                 android:gravity="center"
                 android:fontFamily="sans-serif-light"
-                android:letterSpacing="0.02"
-                android:shadowColor="@color/black"
-                android:shadowDx="0"
-                android:shadowDy="2"
-                android:shadowRadius="3"/>
+                android:letterSpacing="0.01"
+                android:alpha="0.98"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Customize your prayer experience"
-                android:textSize="17sp"
+                android:textSize="15sp"
                 android:textColor="@color/white"
-                android:alpha="0.95"
+                android:alpha="0.85"
                 android:gravity="center"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:fontFamily="sans-serif-light"
-                android:letterSpacing="0.01"
-                android:lineSpacingExtra="4dp"/>
+                android:letterSpacing="0.01"/>
         </LinearLayout>
 
         <!-- Prayer Settings Card - Enhanced -->
@@ -108,23 +104,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Prayer Settings"
-                        android:textSize="26sp"
-                        android:textStyle="bold"
+                        android:textSize="22sp"
+                        android:textStyle="normal"
                         android:textColor="@color/text_primary"
                         android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:shadowColor="@color/black"
-                        android:shadowDx="0"
-                        android:shadowDy="1"
-                        android:shadowRadius="1"/>
+                        android:letterSpacing="0.01"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Configure"
-                        android:textSize="15sp"
+                        android:textSize="13sp"
                         android:textColor="@color/primary_color"
-                        android:alpha="0.9"
+                        android:alpha="0.7"
                         android:fontFamily="sans-serif-light"
                         android:letterSpacing="0.01"/>
                 </LinearLayout>
@@ -163,25 +155,20 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Prayer Time Notifications"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textColor="@color/text_primary"
                                 android:fontFamily="sans-serif-medium"
-                                android:letterSpacing="0.01"
-                                android:shadowColor="@color/black"
-                                android:shadowDx="0"
-                                android:shadowDy="0.5"
-                                android:shadowRadius="1"/>
+                                android:letterSpacing="0.01"/>
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Get notified before each prayer"
-                                android:textSize="15sp"
+                                android:textSize="13sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="2dp"
                                 android:fontFamily="sans-serif-light"
-                                android:letterSpacing="0.01"
-                                android:lineSpacingExtra="2dp"/>
+                                android:letterSpacing="0.01"/>
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -227,25 +214,20 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Auto Update Location"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textColor="@color/text_primary"
                                 android:fontFamily="sans-serif-medium"
-                                android:letterSpacing="0.01"
-                                android:shadowColor="@color/black"
-                                android:shadowDx="0"
-                                android:shadowDy="0.5"
-                                android:shadowRadius="1"/>
+                                android:letterSpacing="0.01"/>
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Automatically update prayer times"
-                                android:textSize="15sp"
+                                android:textSize="13sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="2dp"
                                 android:fontFamily="sans-serif-light"
-                                android:letterSpacing="0.01"
-                                android:lineSpacingExtra="2dp"/>
+                                android:letterSpacing="0.01"/>
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -291,25 +273,20 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Vibration"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textColor="@color/text_primary"
                                 android:fontFamily="sans-serif-medium"
-                                android:letterSpacing="0.01"
-                                android:shadowColor="@color/black"
-                                android:shadowDx="0"
-                                android:shadowDy="0.5"
-                                android:shadowRadius="1"/>
+                                android:letterSpacing="0.01"/>
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Vibrate on prayer notifications"
-                                android:textSize="15sp"
+                                android:textSize="13sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="2dp"
                                 android:fontFamily="sans-serif-light"
-                                android:letterSpacing="0.01"
-                                android:lineSpacingExtra="2dp"/>
+                                android:letterSpacing="0.01"/>
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -355,25 +332,20 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Dark Mode"
-                                android:textSize="18sp"
+                                android:textSize="16sp"
                                 android:textColor="@color/text_primary"
                                 android:fontFamily="sans-serif-medium"
-                                android:letterSpacing="0.01"
-                                android:shadowColor="@color/black"
-                                android:shadowDx="0"
-                                android:shadowDy="0.5"
-                                android:shadowRadius="1"/>
+                                android:letterSpacing="0.01"/>
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Switch to dark theme"
-                                android:textSize="15sp"
+                                android:textSize="13sp"
                                 android:textColor="@color/text_secondary"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="2dp"
                                 android:fontFamily="sans-serif-light"
-                                android:letterSpacing="0.01"
-                                android:lineSpacingExtra="2dp"/>
+                                android:letterSpacing="0.01"/>
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -427,23 +399,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Support Us"
-                        android:textSize="26sp"
-                        android:textStyle="bold"
+                        android:textSize="22sp"
+                        android:textStyle="normal"
                         android:textColor="@color/text_primary"
                         android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:shadowColor="@color/black"
-                        android:shadowDx="0"
-                        android:shadowDy="1"
-                        android:shadowRadius="1"/>
+                        android:letterSpacing="0.01"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Help"
-                        android:textSize="15sp"
+                        android:textSize="13sp"
                         android:textColor="@color/primary_color"
-                        android:alpha="0.9"
+                        android:alpha="0.7"
                         android:fontFamily="sans-serif-light"
                         android:letterSpacing="0.01"/>
                 </LinearLayout>
@@ -453,14 +421,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Rate App"
-                    android:textSize="16sp"
-                    android:padding="20dp"
+                    android:textSize="14sp"
+                    android:padding="16dp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     app:strokeColor="@color/primary_color"
                     android:textColor="@color/primary_color"
                     app:cornerRadius="16dp"
                     android:layout_marginBottom="12dp"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="sans-serif-light"
                     android:letterSpacing="0.01"/>
 
                 <com.google.android.material.button.MaterialButton
@@ -468,14 +436,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Share App"
-                    android:textSize="16sp"
-                    android:padding="20dp"
+                    android:textSize="14sp"
+                    android:padding="16dp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     app:strokeColor="@color/primary_color"
                     android:textColor="@color/primary_color"
                     app:cornerRadius="16dp"
                     android:layout_marginBottom="12dp"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="sans-serif-light"
                     android:letterSpacing="0.01"/>
 
                 <com.google.android.material.button.MaterialButton
@@ -483,13 +451,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Send Feedback"
-                    android:textSize="16sp"
-                    android:padding="20dp"
+                    android:textSize="14sp"
+                    android:padding="16dp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     app:strokeColor="@color/primary_color"
                     android:textColor="@color/primary_color"
                     app:cornerRadius="16dp"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="sans-serif-light"
                     android:letterSpacing="0.01"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -529,23 +497,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Developer"
-                        android:textSize="26sp"
-                        android:textStyle="bold"
+                        android:textSize="22sp"
+                        android:textStyle="normal"
                         android:textColor="@color/text_primary"
                         android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:shadowColor="@color/black"
-                        android:shadowDx="0"
-                        android:shadowDy="1"
-                        android:shadowRadius="1"/>
+                        android:letterSpacing="0.01"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Contact"
-                        android:textSize="15sp"
+                        android:textSize="13sp"
                         android:textColor="@color/primary_color"
-                        android:alpha="0.9"
+                        android:alpha="0.7"
                         android:fontFamily="sans-serif-light"
                         android:letterSpacing="0.01"/>
                 </LinearLayout>
@@ -563,41 +527,35 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Sajid Khan"
-                        android:textSize="24sp"
-                        android:textStyle="bold"
+                        android:textSize="20sp"
+                        android:textStyle="normal"
                         android:textColor="@color/text_primary"
                         android:gravity="center"
                         android:fontFamily="sans-serif-medium"
-                        android:layout_marginBottom="12dp"
-                        android:letterSpacing="0.01"
-                        android:shadowColor="@color/black"
-                        android:shadowDx="0"
-                        android:shadowDy="1"
-                        android:shadowRadius="1"/>
+                        android:layout_marginBottom="8dp"
+                        android:letterSpacing="0.01"/>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="infoniaziseo@gmail.com"
-                        android:textSize="17sp"
+                        android:textSize="15sp"
                         android:textColor="@color/primary_color"
                         android:gravity="center"
-                        android:layout_marginBottom="24dp"
+                        android:layout_marginBottom="20dp"
                         android:fontFamily="sans-serif-light"
-                        android:letterSpacing="0.01"
-                        android:lineSpacingExtra="2dp"/>
+                        android:letterSpacing="0.01"/>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Please remember me in your prayers."
-                        android:textSize="16sp"
+                        android:textSize="14sp"
                         android:textStyle="italic"
                         android:textColor="@color/text_secondary"
                         android:gravity="center"
                         android:fontFamily="sans-serif-light"
-                        android:letterSpacing="0.01"
-                        android:lineSpacingExtra="3dp"/>
+                        android:letterSpacing="0.01"/>
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -637,23 +595,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="About This App"
-                        android:textSize="26sp"
-                        android:textStyle="bold"
+                        android:textSize="22sp"
+                        android:textStyle="normal"
                         android:textColor="@color/text_primary"
                         android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:shadowColor="@color/black"
-                        android:shadowDx="0"
-                        android:shadowDy="1"
-                        android:shadowRadius="1"/>
+                        android:letterSpacing="0.01"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Info"
-                        android:textSize="15sp"
+                        android:textSize="13sp"
                         android:textColor="@color/primary_color"
-                        android:alpha="0.9"
+                        android:alpha="0.7"
                         android:fontFamily="sans-serif-light"
                         android:letterSpacing="0.01"/>
                 </LinearLayout>
@@ -662,17 +616,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="A comprehensive Islamic app designed to help Muslims maintain their daily spiritual practices. Features include accurate prayer times based on your location, beautiful Arabic audio notifications, tasbeeh counter, and daily Islamic quotes. The app uses precise calculations to provide reliable prayer times and helps you stay connected to your faith throughout the day."
-                    android:textSize="17sp"
+                    android:textSize="15sp"
                     android:textColor="@color/text_primary"
-                    android:lineSpacingExtra="10dp"
+                    android:lineSpacingExtra="6dp"
                     android:background="@drawable/about_text_background"
-                    android:padding="24dp"
+                    android:padding="20dp"
                     android:fontFamily="sans-serif-light"
-                    android:letterSpacing="0.01"
-                    android:shadowColor="@color/black"
-                    android:shadowDx="0"
-                    android:shadowDy="0.5"
-                    android:shadowRadius="1"/>
+                    android:letterSpacing="0.01"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
