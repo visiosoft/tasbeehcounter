@@ -394,23 +394,23 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Islamic Quotes Section with Enhanced Design -->
+        <!-- Islamic Quotes Section with Vertical Readable Layout -->
         <androidx.cardview.widget.CardView
             android:id="@+id/quotesCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="8dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
             app:cardBackgroundColor="@android:color/transparent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp"
-                android:background="@drawable/quotes_gradient_background">
+                android:padding="28dp"
+                android:background="@drawable/enhanced_quotes_gradient">
 
-                <!-- Header with Icon -->
+                <!-- Quote Header with Icon -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -421,65 +421,86 @@
                     <ImageView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:src="@drawable/islamic_symbol"
-                        android:layout_marginEnd="16dp"
-                        app:tint="@color/white"/>
+                        android:src="@drawable/ic_quote"
+                        android:layout_marginEnd="12dp"
+                        app:tint="@color/white"
+                        android:alpha="0.9"/>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/islamic_quotes"
-                        android:textSize="22sp"
+                        android:text="Daily Wisdom"
+                        android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/white"
-                        android:gravity="start"/>
+                        android:fontFamily="sans-serif-medium"/>
 
                     <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
                         android:src="@drawable/ic_quote"
+                        android:rotation="180"
                         app:tint="@color/white"
-                        android:alpha="0.7"/>
+                        android:alpha="0.9"/>
                 </LinearLayout>
 
-                <!-- Quote Content -->
+                <!-- Quote Content Container -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:background="@drawable/quote_content_background"
-                    android:padding="20dp">
+                    android:background="@drawable/enhanced_quote_background"
+                    android:padding="24dp">
 
+                    <!-- English Quote -->
                     <TextView
                         android:id="@+id/quotesTextEnglish"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:textStyle="italic"
                         android:textColor="@color/text_primary"
-                        android:lineSpacingExtra="8dp"
+                        android:lineSpacingExtra="12dp"
                         android:gravity="start"
-                        android:layout_marginBottom="16dp"/>
+                        android:fontFamily="sans-serif-light"
+                        android:layout_marginBottom="20dp"
+                        android:alpha="0.95"
+                        android:letterSpacing="0.02"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
 
+                    <!-- Enhanced Divider -->
                     <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/divider"
-                        android:layout_marginBottom="16dp"/>
+                        android:layout_width="80dp"
+                        android:layout_height="2dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/quote_divider_gradient"
+                        android:layout_marginBottom="20dp"/>
 
+                    <!-- Urdu Quote -->
                     <TextView
                         android:id="@+id/quotesTextUrdu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:textStyle="italic"
                         android:textColor="@color/text_primary"
-                        android:lineSpacingExtra="8dp"
-                        android:gravity="end"/>
+                        android:lineSpacingExtra="12dp"
+                        android:gravity="end"
+                        android:fontFamily="sans-serif-light"
+                        android:alpha="0.95"
+                        android:letterSpacing="0.02"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
 
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
     </LinearLayout>
 </ScrollView> 

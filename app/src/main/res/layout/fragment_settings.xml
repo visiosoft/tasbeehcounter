@@ -3,286 +3,676 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface">
+    android:background="@drawable/background_gradient"
+    android:fillViewport="true"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
-        <!-- Header -->
-        <TextView
+        <!-- Enhanced Header Section -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Settings"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
+            android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="32dp"
+            android:layout_marginTop="16dp">
 
-        <!-- Prayer Settings Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="40dp"
+                app:cardElevation="12dp"
+                app:cardBackgroundColor="@color/white"
+                android:alpha="0.95"
+                android:background="@drawable/settings_header_background">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_settings"
+                    android:layout_gravity="center"
+                    app:tint="@color/primary_color"/>
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:textSize="38sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:gravity="center"
+                android:fontFamily="sans-serif-light"
+                android:letterSpacing="0.02"
+                android:shadowColor="@color/black"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="3"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Customize your prayer experience"
+                android:textSize="17sp"
+                android:textColor="@color/white"
+                android:alpha="0.95"
+                android:gravity="center"
+                android:layout_marginTop="12dp"
+                android:fontFamily="sans-serif-light"
+                android:letterSpacing="0.01"
+                android:lineSpacingExtra="4dp"/>
+        </LinearLayout>
+
+        <!-- Prayer Settings Card - Enhanced -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="?attr/colorSurface">
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@color/white"
+            android:alpha="0.95"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="28dp">
 
-                <TextView
+                <!-- Enhanced Header -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Prayer Settings"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="24dp">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/notificationSwitch"
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_prayer"
+                        android:layout_marginEnd="16dp"
+                        app:tint="@color/primary_color"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Prayer Settings"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.01"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Configure"
+                        android:textSize="15sp"
+                        android:textColor="@color/primary_color"
+                        android:alpha="0.9"
+                        android:fontFamily="sans-serif-light"
+                        android:letterSpacing="0.01"/>
+                </LinearLayout>
+
+                <!-- Enhanced Settings Items -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Prayer Time Notifications"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="vertical"
+                    android:background="@drawable/settings_item_enhanced_background"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/autoLocationSwitch"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_notifications"
+                            android:layout_marginEnd="16dp"
+                            app:tint="@color/primary_color"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Prayer Time Notifications"
+                                android:textSize="18sp"
+                                android:textColor="@color/text_primary"
+                                android:fontFamily="sans-serif-medium"
+                                android:letterSpacing="0.01"
+                                android:shadowColor="@color/black"
+                                android:shadowDx="0"
+                                android:shadowDy="0.5"
+                                android:shadowRadius="1"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Get notified before each prayer"
+                                android:textSize="15sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="sans-serif-light"
+                                android:letterSpacing="0.01"
+                                android:lineSpacingExtra="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/notificationSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:thumbColor="@color/primary_color"
+                            app:trackColor="@color/primary_color"
+                            app:thumbTint="@color/primary_color"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Auto Update Location"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="vertical"
+                    android:background="@drawable/settings_item_enhanced_background"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/vibrationSwitch"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_location"
+                            android:layout_marginEnd="16dp"
+                            app:tint="@color/primary_color"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto Update Location"
+                                android:textSize="18sp"
+                                android:textColor="@color/text_primary"
+                                android:fontFamily="sans-serif-medium"
+                                android:letterSpacing="0.01"
+                                android:shadowColor="@color/black"
+                                android:shadowDx="0"
+                                android:shadowDy="0.5"
+                                android:shadowRadius="1"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Automatically update prayer times"
+                                android:textSize="15sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="sans-serif-light"
+                                android:letterSpacing="0.01"
+                                android:lineSpacingExtra="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/autoLocationSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:thumbColor="@color/primary_color"
+                            app:trackColor="@color/primary_color"
+                            app:thumbTint="@color/primary_color"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Vibration"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="vertical"
+                    android:background="@drawable/settings_item_enhanced_background"
+                    android:padding="20dp"
+                    android:layout_marginBottom="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/darkModeSwitch"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_vibration"
+                            android:layout_marginEnd="16dp"
+                            app:tint="@color/primary_color"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Vibration"
+                                android:textSize="18sp"
+                                android:textColor="@color/text_primary"
+                                android:fontFamily="sans-serif-medium"
+                                android:letterSpacing="0.01"
+                                android:shadowColor="@color/black"
+                                android:shadowDx="0"
+                                android:shadowDy="0.5"
+                                android:shadowRadius="1"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Vibrate on prayer notifications"
+                                android:textSize="15sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="sans-serif-light"
+                                android:letterSpacing="0.01"
+                                android:lineSpacingExtra="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/vibrationSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:thumbColor="@color/primary_color"
+                            app:trackColor="@color/primary_color"
+                            app:thumbTint="@color/primary_color"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Dark Mode"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="vertical"
+                    android:background="@drawable/settings_item_enhanced_background"
+                    android:padding="20dp"
+                    android:layout_marginBottom="20dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/exactAlarmButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Enable Exact Alarms"
-                    android:textSize="14sp"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="8dp"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_dark_mode"
+                            android:layout_marginEnd="16dp"
+                            app:tint="@color/primary_color"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Dark Mode"
+                                android:textSize="18sp"
+                                android:textColor="@color/text_primary"
+                                android:fontFamily="sans-serif-medium"
+                                android:letterSpacing="0.01"
+                                android:shadowColor="@color/black"
+                                android:shadowDx="0"
+                                android:shadowDy="0.5"
+                                android:shadowRadius="1"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Switch to dark theme"
+                                android:textSize="15sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="4dp"
+                                android:fontFamily="sans-serif-light"
+                                android:letterSpacing="0.01"
+                                android:lineSpacingExtra="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/darkModeSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:thumbColor="@color/primary_color"
+                            app:trackColor="@color/primary_color"
+                            app:thumbTint="@color/primary_color"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Test & Refresh Card -->
+
+
+        <!-- Support Us Card - Enhanced -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="?attr/colorSurface">
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@color/white"
+            android:alpha="0.95">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="28dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Test &amp; Refresh"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="24dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/testPrayerNotificationsButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Test Next Prayer Notification (with Audio)"
-                    android:textSize="12sp"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="8dp"/>
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_support"
+                        android:layout_marginEnd="16dp"
+                        app:tint="@color/primary_color"/>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/testMissedTasbeehButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Test Missed Tasbeeh Alert"
-                    android:textSize="12sp"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="8dp"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Support Us"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.01"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/refreshAccurateLocationButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Fetch Fresh Data Based on Current Location"
-                    android:textSize="12sp"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="8dp"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Rate & Share Card -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="?attr/colorSurface">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Support Us"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Help"
+                        android:textSize="15sp"
+                        android:textColor="@color/primary_color"
+                        android:alpha="0.9"
+                        android:fontFamily="sans-serif-light"
+                        android:letterSpacing="0.01"/>
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/rateButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Rate App"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
+                    android:padding="20dp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="8dp"/>
+                    app:strokeColor="@color/primary_color"
+                    android:textColor="@color/primary_color"
+                    app:cornerRadius="16dp"
+                    android:layout_marginBottom="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.01"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/shareButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Share App"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
+                    android:padding="20dp"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginBottom="8dp"/>
+                    app:strokeColor="@color/primary_color"
+                    android:textColor="@color/primary_color"
+                    app:cornerRadius="16dp"
+                    android:layout_marginBottom="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.01"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/feedbackButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Send Feedback"
-                    android:textSize="14sp"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                    android:textSize="16sp"
+                    android:padding="20dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    app:strokeColor="@color/primary_color"
+                    android:textColor="@color/primary_color"
+                    app:cornerRadius="16dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.01"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Developer Card -->
+        <!-- Developer Card - Enhanced -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="?attr/colorSurface">
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@color/white"
+            android:alpha="0.95">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="28dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Developer"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="24dp">
 
-                <TextView
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_developer"
+                        android:layout_marginEnd="16dp"
+                        app:tint="@color/primary_color"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Developer"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.01"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Contact"
+                        android:textSize="15sp"
+                        android:textColor="@color/primary_color"
+                        android:alpha="0.9"
+                        android:fontFamily="sans-serif-light"
+                        android:letterSpacing="0.01"/>
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sajid Khan"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
+                    android:orientation="vertical"
+                    android:background="@drawable/enhanced_developer_background"
+                    android:padding="24dp"
                     android:gravity="center"
-                    android:layout_marginBottom="8dp"/>
+                    android:layout_marginTop="8dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="infoniaziseo@gmail.com"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:gravity="center"
-                    android:layout_marginBottom="12dp"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sajid Khan"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:gravity="center"
+                        android:fontFamily="sans-serif-medium"
+                        android:layout_marginBottom="12dp"
+                        android:letterSpacing="0.01"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Please remember me in your prayers."
-                    android:textSize="14sp"
-                    android:textStyle="italic"
-                    android:textColor="?attr/colorOnSurface"
-                    android:gravity="center"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="infoniaziseo@gmail.com"
+                        android:textSize="17sp"
+                        android:textColor="@color/primary_color"
+                        android:gravity="center"
+                        android:layout_marginBottom="24dp"
+                        android:fontFamily="sans-serif-light"
+                        android:letterSpacing="0.01"
+                        android:lineSpacingExtra="2dp"/>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Please remember me in your prayers."
+                        android:textSize="16sp"
+                        android:textStyle="italic"
+                        android:textColor="@color/text_secondary"
+                        android:gravity="center"
+                        android:fontFamily="sans-serif-light"
+                        android:letterSpacing="0.01"
+                        android:lineSpacingExtra="3dp"/>
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- About Card -->
+        <!-- About Card - Enhanced -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="80dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="?attr/colorSurface">
+            android:layout_marginBottom="100dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@color/white"
+            android:alpha="0.95">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="28dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="24dp">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_info"
+                        android:layout_marginEnd="16dp"
+                        app:tint="@color/primary_color"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="About This App"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.01"
+                        android:shadowColor="@color/black"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="1"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Info"
+                        android:textSize="15sp"
+                        android:textColor="@color/primary_color"
+                        android:alpha="0.9"
+                        android:fontFamily="sans-serif-light"
+                        android:letterSpacing="0.01"/>
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="About This App"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="16dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Tasbeeh Counter is designed to help Muslims maintain their daily dhikr and prayer routines. The app provides accurate prayer times based on your location and includes beautiful Arabic audio notifications to remind you of prayer times."
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:lineSpacingExtra="4dp"/>
+                    android:text="A comprehensive Islamic app designed to help Muslims maintain their daily spiritual practices. Features include accurate prayer times based on your location, beautiful Arabic audio notifications, tasbeeh counter, and daily Islamic quotes. The app uses precise calculations to provide reliable prayer times and helps you stay connected to your faith throughout the day."
+                    android:textSize="17sp"
+                    android:textColor="@color/text_primary"
+                    android:lineSpacingExtra="10dp"
+                    android:background="@drawable/about_text_background"
+                    android:padding="24dp"
+                    android:fontFamily="sans-serif-light"
+                    android:letterSpacing="0.01"
+                    android:shadowColor="@color/black"
+                    android:shadowDx="0"
+                    android:shadowDy="0.5"
+                    android:shadowRadius="1"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

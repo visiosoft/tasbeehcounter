@@ -56,6 +56,7 @@ class NamazFragment : Fragment() {
     private var currentCityName: String? = null
     private lateinit var notificationManager: NotificationManager
     
+
     private var quoteChangeJob: Job? = null
     private var currentQuoteIndex = 0
     private var isEnglish = true
@@ -379,17 +380,17 @@ class NamazFragment : Fragment() {
                     }
                     
                     Log.d("NamazFragment", "Resolved city name: $cityName")
-                    
-                    withContext(Dispatchers.Main) {
-                        // Check if fragment is still active before updating UI
-                        if (isAdded && !isDetached && _binding != null) {
+                
+                withContext(Dispatchers.Main) {
+                    // Check if fragment is still active before updating UI
+                    if (isAdded && !isDetached && _binding != null) {
                             currentCityName = cityName
                             updateLocationText(cityName)
-                            // Don't show notification for successful location updates to reduce spam
-                            updatePrayerTimes()
-                            
-                            // Reset GPS/network error flag since location was successfully obtained
-                            hasShownGpsNetworkError = false
+                        // Don't show notification for successful location updates to reduce spam
+                        updatePrayerTimes()
+                        
+                        // Reset GPS/network error flag since location was successfully obtained
+                        hasShownGpsNetworkError = false
                             
                             Log.d("NamazFragment", "Updated location to: $cityName")
                         } else {
@@ -499,64 +500,7 @@ class NamazFragment : Fragment() {
         }
     }
 
-    private fun updateIslamicQuotes() {
-        currentQuoteIndex = 0
-        changeQuote()
-        startAutoQuoteChange() // Start auto-changing quotes
-    }
 
-    private fun startAutoQuoteChange() {
-        quoteChangeJob?.cancel() // Cancel any existing job
-        quoteChangeJob = CoroutineScope(Dispatchers.Main).launch {
-            try {
-                while (true) {
-                    delay(10000) // 10 seconds delay
-                    if (isActive && isAdded && !isDetached && _binding != null) {
-                        changeQuote()
-                    } else {
-                        break // Exit the loop if fragment is no longer active
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun stopAutoQuoteChange() {
-        quoteChangeJob?.cancel()
-        quoteChangeJob = null
-    }
-
-    private fun changeQuote() {
-        val englishQuotes = listOf(
-            getString(R.string.quote_1),
-            getString(R.string.quote_2),
-            getString(R.string.quote_3),
-            getString(R.string.quote_4),
-            getString(R.string.quote_5),
-            getString(R.string.quote_6),
-            getString(R.string.quote_7),
-            getString(R.string.quote_8)
-        )
-        
-        val urduQuotes = listOf(
-            getString(R.string.quote_1_urdu),
-            getString(R.string.quote_2_urdu),
-            getString(R.string.quote_3_urdu),
-            getString(R.string.quote_4_urdu),
-            getString(R.string.quote_5_urdu),
-            getString(R.string.quote_6_urdu),
-            getString(R.string.quote_7_urdu),
-            getString(R.string.quote_8_urdu)
-        )
-        
-        currentQuoteIndex = (currentQuoteIndex + 1) % englishQuotes.size
-        _binding?.let { binding ->
-            binding.quotesTextEnglish.text = englishQuotes[currentQuoteIndex]
-            binding.quotesTextUrdu.text = urduQuotes[currentQuoteIndex]
-        }
-    }
 
     override fun onResume() {
         super.onResume()
@@ -743,6 +687,65 @@ class NamazFragment : Fragment() {
         return nextPrayer
     }
 
+    private fun updateIslamicQuotes() {
+        currentQuoteIndex = 0
+        changeQuote()
+        startAutoQuoteChange() // Start auto-changing quotes
+    }
+
+    private fun startAutoQuoteChange() {
+        quoteChangeJob?.cancel() // Cancel any existing job
+        quoteChangeJob = CoroutineScope(Dispatchers.Main).launch {
+            try {
+                while (true) {
+                    delay(10000) // 10 seconds delay
+                    if (isActive && isAdded && !isDetached && _binding != null) {
+                        changeQuote()
+                    } else {
+                        break // Exit the loop if fragment is no longer active
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun stopAutoQuoteChange() {
+        quoteChangeJob?.cancel()
+        quoteChangeJob = null
+    }
+
+    private fun changeQuote() {
+        val englishQuotes = listOf(
+            getString(R.string.quote_1),
+            getString(R.string.quote_2),
+            getString(R.string.quote_3),
+            getString(R.string.quote_4),
+            getString(R.string.quote_5),
+            getString(R.string.quote_6),
+            getString(R.string.quote_7),
+            getString(R.string.quote_8)
+        )
+        
+        val urduQuotes = listOf(
+            getString(R.string.quote_1_urdu),
+            getString(R.string.quote_2_urdu),
+            getString(R.string.quote_3_urdu),
+            getString(R.string.quote_4_urdu),
+            getString(R.string.quote_5_urdu),
+            getString(R.string.quote_6_urdu),
+            getString(R.string.quote_7_urdu),
+            getString(R.string.quote_8_urdu)
+        )
+        
+        currentQuoteIndex = (currentQuoteIndex + 1) % englishQuotes.size
+        _binding?.let { binding ->
+            binding.quotesTextEnglish.text = englishQuotes[currentQuoteIndex]
+            binding.quotesTextUrdu.text = urduQuotes[currentQuoteIndex]
+        }
+    }
+
     private fun testLocationFunctionality() {
         Log.d("NamazFragment", "Testing location functionality...")
         
@@ -753,27 +756,33 @@ class NamazFragment : Fragment() {
         // Test if we can get current location
         if (hasLocationPermission) {
             try {
-                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                    .addOnSuccessListener { location: Location? ->
-                        if (location != null) {
-                            Log.d("NamazFragment", "Test: Got location - ${location.latitude}, ${location.longitude}")
-                            // Show coordinates immediately
-                            CoroutineScope(Dispatchers.Main).launch {
-                                if (isAdded && !isDetached && _binding != null) {
-                                    val coordinateText = "📍 Test: ${location.latitude.toFloat()}, ${location.longitude.toFloat()}"
-                                    binding.locationText.text = coordinateText
-                                    Toast.makeText(context, "Location test successful", Toast.LENGTH_SHORT).show()
+                // Check if we have the required permission before making the call
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                        .addOnSuccessListener { location: Location? ->
+                            if (location != null) {
+                                Log.d("NamazFragment", "Test: Got location - ${location.latitude}, ${location.longitude}")
+                                // Show coordinates immediately
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    if (isAdded && !isDetached && _binding != null) {
+                                        val coordinateText = "📍 Test: ${location.latitude.toFloat()}, ${location.longitude.toFloat()}"
+                                        binding.locationText.text = coordinateText
+                                        Toast.makeText(context, "Location test successful", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
+                            } else {
+                                Log.d("NamazFragment", "Test: Location is null")
+                                Toast.makeText(context, "Location test: Location is null", Toast.LENGTH_SHORT).show()
                             }
-                        } else {
-                            Log.d("NamazFragment", "Test: Location is null")
-                            Toast.makeText(context, "Location test: Location is null", Toast.LENGTH_SHORT).show()
                         }
+                        .addOnFailureListener { exception ->
+                            Log.e("NamazFragment", "Test: Failed to get location", exception)
+                            Toast.makeText(context, "Location test failed: ${exception.message}", Toast.LENGTH_SHORT).show()
                     }
-                    .addOnFailureListener { exception ->
-                        Log.e("NamazFragment", "Test: Failed to get location", exception)
-                        Toast.makeText(context, "Location test failed: ${exception.message}", Toast.LENGTH_SHORT).show()
-                    }
+                } else {
+                    Log.d("NamazFragment", "Test: No fine location permission")
+                    Toast.makeText(context, "Location test: No fine location permission", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 Log.e("NamazFragment", "Test: Exception getting location", e)
                 Toast.makeText(context, "Location test exception: ${e.message}", Toast.LENGTH_SHORT).show()

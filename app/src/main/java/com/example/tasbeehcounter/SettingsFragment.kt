@@ -28,7 +28,7 @@ class SettingsFragment : Fragment() {
     private lateinit var autoLocationSwitch: SwitchMaterial
     private lateinit var vibrationSwitch: SwitchMaterial
     private lateinit var darkModeSwitch: SwitchMaterial
-    private lateinit var exactAlarmButton: com.google.android.material.button.MaterialButton
+
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -82,7 +82,7 @@ class SettingsFragment : Fragment() {
         autoLocationSwitch = binding.autoLocationSwitch
         vibrationSwitch = binding.vibrationSwitch
         darkModeSwitch = binding.darkModeSwitch
-        exactAlarmButton = binding.exactAlarmButton
+
 
         // Load saved preferences
         val prefs = requireContext().getSharedPreferences("Settings", 0)
@@ -91,24 +91,10 @@ class SettingsFragment : Fragment() {
         vibrationSwitch.isChecked = prefs.getBoolean("vibration", true)
         darkModeSwitch.isChecked = prefs.getBoolean("darkMode", false)
         
-        // Update exact alarm button text based on permission status
-        updateExactAlarmButtonText()
+
     }
 
-    private fun updateExactAlarmButtonText() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            if (NotificationService.canScheduleExactAlarms(requireContext())) {
-                exactAlarmButton.text = "Exact Alarms Enabled ✓"
-                exactAlarmButton.isEnabled = false
-            } else {
-                exactAlarmButton.text = "Enable Exact Alarms"
-                exactAlarmButton.isEnabled = true
-            }
-        } else {
-            exactAlarmButton.text = "Exact Alarms Not Required"
-            exactAlarmButton.isEnabled = false
-        }
-    }
+
 
     private fun setupListeners() {
         val prefs = requireContext().getSharedPreferences("Settings", 0)
@@ -182,24 +168,7 @@ class SettingsFragment : Fragment() {
             editor.apply()
         }
 
-        exactAlarmButton.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                NotificationService.requestExactAlarmPermission(requireContext())
-                Toast.makeText(requireContext(), "Please enable exact alarms in system settings", Toast.LENGTH_LONG).show()
-            }
-        }
 
-        binding.testPrayerNotificationsButton.setOnClickListener {
-             testPrayerNotifications()
-        }
-
-        binding.testMissedTasbeehButton.setOnClickListener {
-            testMissedTasbeehAlert()
-        }
-
-        binding.refreshAccurateLocationButton.setOnClickListener {
-            refreshPrayerTimesWithAccurateLocation()
-        }
 
         binding.rateButton.setOnClickListener {
             openPlayStore()
@@ -221,39 +190,9 @@ class SettingsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Update exact alarm button text when returning from settings
-        updateExactAlarmButtonText()
     }
 
-    private fun refreshPrayerTimesWithAccurateLocation() {
-        lifecycleScope.launch {
-            try {
-                Toast.makeText(requireContext(), "Clearing old data and fetching fresh online prayer times...", Toast.LENGTH_SHORT).show()
-                val prayerTimes = PrayerTimesManager.clearAllStoredDataAndFetchFresh(requireContext())
-                if (prayerTimes != null) {
-                    Toast.makeText(requireContext(), "Fresh prayer times loaded for ${prayerTimes.location}!", Toast.LENGTH_LONG).show()
-                    // Add a small delay to ensure data is properly saved
-                    delay(1000)
-                } else {
-                    Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
-    private fun testPrayerNotifications() {
-        val notificationService = NotificationService()
-        notificationService.sendPrayerNotificationWithAudio(requireContext(), "fajr")
-        Toast.makeText(requireContext(), "Test prayer notification with audio sent!", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun testMissedTasbeehAlert() {
-        val notificationService = NotificationService()
-        notificationService.testMissedTasbeehNotification(requireContext())
-        Toast.makeText(requireContext(), "Test missed tasbeeh notification with bilingual quote sent!", Toast.LENGTH_SHORT).show()
-    }
 
     private fun openPlayStore() {
         try {
