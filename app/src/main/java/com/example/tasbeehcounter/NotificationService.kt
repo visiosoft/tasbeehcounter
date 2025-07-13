@@ -251,6 +251,8 @@ class NotificationService {
         }
         
         try {
+            Log.d(TAG, "Starting to schedule prayer reminders...")
+            
             // Cancel existing prayer reminders
             cancelExistingPrayerReminders(context)
             
@@ -260,7 +262,10 @@ class NotificationService {
             val todayPrayerTimes = prayerTimes.find { it.date == today }
             
             if (todayPrayerTimes != null) {
-                // Use stored prayer times (works offline)
+                Log.d(TAG, "Found stored prayer times for today: ${todayPrayerTimes.location}")
+                Log.d(TAG, "Prayer times: Fajr=${todayPrayerTimes.fajr}, Dhuhr=${todayPrayerTimes.dhuhr}, Asr=${todayPrayerTimes.asr}, Maghrib=${todayPrayerTimes.maghrib}, Isha=${todayPrayerTimes.isha}")
+                
+                // Use stored prayer times (works offline) - ONLY schedule these 5 prayers
                 schedulePrayerReminderFromTime(context, "fajr", todayPrayerTimes.fajr)
                 schedulePrayerReminderFromTime(context, "dhuhr", todayPrayerTimes.dhuhr)
                 schedulePrayerReminderFromTime(context, "asr", todayPrayerTimes.asr)
@@ -268,7 +273,9 @@ class NotificationService {
                 schedulePrayerReminderFromTime(context, "isha", todayPrayerTimes.isha)
                 Log.d(TAG, "Prayer reminders scheduled using stored prayer times (offline compatible)")
             } else {
-                // Use default times if no stored prayer times available
+                Log.d(TAG, "No stored prayer times found for today, using default times")
+                
+                // Use default times if no stored prayer times available - ONLY schedule these 5 prayers
                 schedulePrayerReminder(context, "fajr", 5, 30) // 5:30 AM
                 schedulePrayerReminder(context, "dhuhr", 12, 30) // 12:30 PM
                 schedulePrayerReminder(context, "asr", 15, 30) // 3:30 PM
@@ -276,6 +283,8 @@ class NotificationService {
                 schedulePrayerReminder(context, "isha", 19, 30) // 7:30 PM
                 Log.d(TAG, "Prayer reminders scheduled using default times (no stored data)")
             }
+            
+            Log.d(TAG, "Prayer reminder scheduling completed successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error scheduling prayer reminders", e)
         }
@@ -864,28 +873,77 @@ class PrayerReminderReceiver : BroadcastReceiver() {
     private fun scheduleNextDayReminder(context: Context, prayerName: String) {
         val calendar = Calendar.getInstance()
         calendar.add(Calendar.DAY_OF_MONTH, 1)
+        val tomorrow = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
         
-        val hour = when (prayerName) {
-            "fajr" -> 5
-            "dhuhr" -> 12
-            "asr" -> 15
-            "maghrib" -> 18
-            "isha" -> 19
-            else -> 12
+        // Try to get tomorrow's prayer times from stored data
+        val prayerTimes = PrayerTimesManager.getPrayerTimes(context)
+        val tomorrowPrayerTimes = prayerTimes.find { it.date == tomorrow }
+        
+        var hour: Int
+        var minute: Int
+        
+        if (tomorrowPrayerTimes != null) {
+            // Use actual prayer times for tomorrow
+            val prayerTimeString = when (prayerName) {
+                "fajr" -> tomorrowPrayerTimes.fajr
+                "dhuhr" -> tomorrowPrayerTimes.dhuhr
+                "asr" -> tomorrowPrayerTimes.asr
+                "maghrib" -> tomorrowPrayerTimes.maghrib
+                "isha" -> tomorrowPrayerTimes.isha
+                else -> tomorrowPrayerTimes.dhuhr
+            }
+            
+            try {
+                val timeParts = prayerTimeString.split(":")
+                val prayerHour = timeParts[0].toInt()
+                val prayerMinute = timeParts[1].toInt()
+                
+                // Add 5 minutes AFTER the prayer time starts (same as schedulePrayerReminderFromTime)
+                val reminderMinute = prayerMinute + 5
+                val reminderHour = if (reminderMinute >= 60) prayerHour + 1 else prayerHour
+                val finalMinute = if (reminderMinute >= 60) reminderMinute - 60 else reminderMinute
+                
+                hour = reminderHour
+                minute = finalMinute
+                
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                
+                Log.d("PrayerReminderReceiver", "Scheduled next day reminder for $prayerName using actual prayer time: ${hour}:${String.format("%02d", minute)}")
+            } catch (e: Exception) {
+                Log.e("PrayerReminderReceiver", "Error parsing prayer time for tomorrow: $prayerTimeString", e)
+                // Fallback to default time
+                hour = when (prayerName) {
+                    "fajr" -> 5
+                    "dhuhr" -> 12
+                    "asr" -> 15
+                    "maghrib" -> 18
+                    "isha" -> 19
+                    else -> 12
+                }
+                minute = 30
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+            }
+        } else {
+            // Fallback to default times if no stored data for tomorrow
+            hour = when (prayerName) {
+                "fajr" -> 5
+                "dhuhr" -> 12
+                "asr" -> 15
+                "maghrib" -> 18
+                "isha" -> 19
+                else -> 12
+            }
+            minute = 30
+            calendar.set(Calendar.HOUR_OF_DAY, hour)
+            calendar.set(Calendar.MINUTE, minute)
+            calendar.set(Calendar.SECOND, 0)
+            
+            Log.d("PrayerReminderReceiver", "Scheduled next day reminder for $prayerName using default time: ${hour}:${String.format("%02d", minute)}")
         }
-        
-        val minute = when (prayerName) {
-            "fajr" -> 30
-            "dhuhr" -> 30
-            "asr" -> 30
-            "maghrib" -> 30
-            "isha" -> 30
-            else -> 30
-        }
-        
-        calendar.set(Calendar.HOUR_OF_DAY, hour)
-        calendar.set(Calendar.MINUTE, minute)
-        calendar.set(Calendar.SECOND, 0)
         
         val intent = Intent(context, PrayerReminderReceiver::class.java).apply {
             putExtra("prayer", prayerName)

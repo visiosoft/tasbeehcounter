@@ -3,7 +3,7 @@
     <gradient
         android:type="linear"
         android:angle="135"
-        android:startColor="@color/next_prayer_start"
-        android:endColor="@color/next_prayer_end" />
-    <corners android:radius="16dp" />
+        android:startColor="#667eea"
+        android:endColor="#764ba2" />
+    <corners android:radius="20dp" />
 </shape> 

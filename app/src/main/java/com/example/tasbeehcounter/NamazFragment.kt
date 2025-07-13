@@ -42,6 +42,9 @@ import org.json.JSONObject
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import java.net.HttpURLConnection
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class NamazFragment : Fragment() {
     private var _binding: FragmentNamazBinding? = null
@@ -107,6 +110,9 @@ class NamazFragment : Fragment() {
             vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
         
+        // Show initial location status
+        showLocationStatus()
+        
         // Automatically check location permission on start
         checkLocationPermission()
     }
@@ -164,11 +170,13 @@ class NamazFragment : Fragment() {
             }
         }
         
-        // Make quotes card clickable for tasbeeh counting
-        binding.quotesCard.setOnClickListener {
-            // Count tasbeeh when quotes card is tapped
-            incrementTasbeehCount()
+        // Add a long press on location button for testing
+        binding.locationButton.setOnLongClickListener {
+            testLocationFunctionality()
+            true
         }
+        
+        // Removed tasbeeh counting functionality from prayer timing page
     }
 
     private fun isLocationPermissionGranted(): Boolean {
@@ -245,39 +253,160 @@ class NamazFragment : Fragment() {
     }
 
     private fun getCityNameFromLocation(location: Location) {
+        Log.d("NamazFragment", "Starting city name lookup for coordinates: ${location.latitude}, ${location.longitude}")
+        
+        // First, show coordinates immediately as a fallback
+        CoroutineScope(Dispatchers.Main).launch {
+            if (isAdded && !isDetached && _binding != null) {
+                val coordinateText = "📍 ${location.latitude.toFloat()}, ${location.longitude.toFloat()}"
+                binding.locationText.text = coordinateText
+                Log.d("NamazFragment", "Showing coordinates as fallback: $coordinateText")
+            }
+        }
+        
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Round coordinates to 2 decimal places for a wider area search
-                val roundedLat = Math.round(location.latitude * 100.0) / 100.0
-                val roundedLon = Math.round(location.longitude * 100.0) / 100.0
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$roundedLat&lon=$roundedLon&accept-language=en&zoom=10"
-                val response = URL(url).readText()
-                val json = JSONObject(response)
-                val address = json.getJSONObject("address")
-                val city = address.optString("city") ?: address.optString("town") ?: address.optString("village")
-                val state = address.optString("state", "")
-                val province = address.optString("county", "")
+                // Use more precise coordinates for better accuracy
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}&accept-language=en&zoom=10&addressdetails=1"
+                Log.d("NamazFragment", "Making API request to: $url")
                 
-                withContext(Dispatchers.Main) {
-                    // Check if fragment is still active before updating UI
-                    if (isAdded && !isDetached && _binding != null) {
-                        currentCityName = city
-                        val locationText = when {
-                            city.isNotEmpty() && province.isNotEmpty() -> "$city, $province"
-                            city.isNotEmpty() && state.isNotEmpty() -> "$city, $state"
-                            city.isNotEmpty() -> city
-                            state.isNotEmpty() -> state
-                            else -> getDefaultMainCity()
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.setRequestProperty("User-Agent", "TasbeehCounter/1.0")
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+
+                val responseCode = connection.responseCode
+                Log.d("NamazFragment", "API response code: $responseCode")
+                
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                    val response = StringBuilder()
+                    var line: String?
+                    
+                    while (reader.readLine().also { line = it } != null) {
+                        response.append(line)
+                    }
+                    reader.close()
+
+                    val json = JSONObject(response.toString())
+                    val address = json.getJSONObject("address")
+                    
+                    Log.d("NamazFragment", "Full API response: ${response.toString()}")
+                    Log.d("NamazFragment", "Address object: ${address.toString()}")
+                    
+                    // Enhanced city name resolution with better fallback hierarchy
+                    val cityName = when {
+                        // Primary city names with state/province
+                        address.optString("city").isNotEmpty() -> {
+                            val city = address.optString("city")
+                            val state = address.optString("state", "")
+                            val country = address.optString("country", "")
+                            when {
+                                state.isNotEmpty() && country.isNotEmpty() -> "$city, $state, $country"
+                                state.isNotEmpty() -> "$city, $state"
+                                country.isNotEmpty() -> "$city, $country"
+                                else -> city
+                            }
                         }
-                        updateLocationText(locationText)
-                        // Don't show notification for successful location updates to reduce spam
-                        updatePrayerTimes()
-                        
-                        // Reset GPS/network error flag since location was successfully obtained
-                        hasShownGpsNetworkError = false
+                        address.optString("town").isNotEmpty() -> {
+                            val town = address.optString("town")
+                            val state = address.optString("state", "")
+                            val country = address.optString("country", "")
+                            when {
+                                state.isNotEmpty() && country.isNotEmpty() -> "$town, $state, $country"
+                                state.isNotEmpty() -> "$town, $state"
+                                country.isNotEmpty() -> "$town, $country"
+                                else -> town
+                            }
+                        }
+                        address.optString("village").isNotEmpty() -> {
+                            val village = address.optString("village")
+                            val state = address.optString("state", "")
+                            val country = address.optString("country", "")
+                            when {
+                                state.isNotEmpty() && country.isNotEmpty() -> "$village, $state, $country"
+                                state.isNotEmpty() -> "$village, $state"
+                                country.isNotEmpty() -> "$village, $country"
+                                else -> village
+                            }
+                        }
+                        // Suburban areas with city context
+                        address.optString("suburb").isNotEmpty() -> {
+                            val suburb = address.optString("suburb")
+                            val city = address.optString("city", "")
+                            val state = address.optString("state", "")
+                            val country = address.optString("country", "")
+                            when {
+                                city.isNotEmpty() && state.isNotEmpty() && country.isNotEmpty() -> "$suburb, $city, $state, $country"
+                                city.isNotEmpty() && state.isNotEmpty() -> "$suburb, $city, $state"
+                                city.isNotEmpty() -> "$suburb, $city"
+                                state.isNotEmpty() && country.isNotEmpty() -> "$suburb, $state, $country"
+                                state.isNotEmpty() -> "$suburb, $state"
+                                else -> suburb
+                            }
+                        }
+                        // County/Province level
+                        address.optString("county").isNotEmpty() -> {
+                            val county = address.optString("county")
+                            val state = address.optString("state", "")
+                            val country = address.optString("country", "")
+                            when {
+                                state.isNotEmpty() && country.isNotEmpty() -> "$county, $state, $country"
+                                state.isNotEmpty() -> "$county, $state"
+                                country.isNotEmpty() -> "$county, $country"
+                                else -> county
+                            }
+                        }
+                        // State/Province level
+                        address.optString("state").isNotEmpty() -> {
+                            val state = address.optString("state")
+                            val country = address.optString("country", "")
+                            if (country.isNotEmpty()) "$state, $country" else state
+                        }
+                        // Country level
+                        address.optString("country").isNotEmpty() -> {
+                            address.optString("country")
+                        }
+                        // Display name from Nominatim as last resort
+                        json.optString("display_name").isNotEmpty() -> {
+                            val displayName = json.optString("display_name")
+                            // Extract the most relevant parts (first two parts before comma)
+                            val parts = displayName.split(",").take(2).map { it.trim() }
+                            parts.joinToString(", ")
+                        }
+                        else -> getDefaultMainCity()
+                    }
+                    
+                    Log.d("NamazFragment", "Resolved city name: $cityName")
+                    
+                    withContext(Dispatchers.Main) {
+                        // Check if fragment is still active before updating UI
+                        if (isAdded && !isDetached && _binding != null) {
+                            currentCityName = cityName
+                            updateLocationText(cityName)
+                            // Don't show notification for successful location updates to reduce spam
+                            updatePrayerTimes()
+                            
+                            // Reset GPS/network error flag since location was successfully obtained
+                            hasShownGpsNetworkError = false
+                            
+                            Log.d("NamazFragment", "Updated location to: $cityName")
+                        } else {
+                            Log.w("NamazFragment", "Fragment not active, skipping UI update")
+                        }
+                    }
+                } else {
+                    Log.e("NamazFragment", "Reverse geocoding failed with response code: $responseCode")
+                    withContext(Dispatchers.Main) {
+                        if (isAdded && !isDetached && _binding != null) {
+                            updateLocationText(getDefaultMainCity())
+                            updatePrayerTimes()
+                        }
                     }
                 }
             } catch (e: Exception) {
+                Log.e("NamazFragment", "Error getting city name from location", e)
                 withContext(Dispatchers.Main) {
                     // Check if fragment is still active before updating UI
                     if (isAdded && !isDetached && _binding != null) {
@@ -327,7 +456,7 @@ class NamazFragment : Fragment() {
     }
 
     private fun updateLocationText(text: String) {
-        _binding?.locationText?.text = text
+        _binding?.locationText?.text = "📍 $text"
     }
 
     private fun updatePrayerTimes() {
@@ -458,52 +587,94 @@ class NamazFragment : Fragment() {
     }
 
     private fun refreshLocationAndPrayerTimes() {
-        // Reset GPS/network error flag when user manually refreshes
-        hasShownGpsNetworkError = false
-        
-        // Don't show notification for starting update to reduce spam
-        
         lifecycleScope.launch {
             try {
-                isRefreshingData = true // Set flag to prevent onResume interference
+                // Show loading state with visual feedback
+                binding.locationText.text = "📍 Updating location..."
+                binding.locationButton.isEnabled = false // Disable button during update
                 
-                // Clear all stored data and fetch fresh online data
-                val prayerTimes = PrayerTimesManager.clearAllStoredDataAndFetchFresh(requireContext())
+                // Use the enhanced prayer times manager to get fresh location and prayer times
+                val prayerTimes = PrayerTimesManager.getPrayerTimesForToday(requireContext())
+                
                 if (prayerTimes != null) {
-                    // Update UI with new prayer times
-                    withContext(Dispatchers.Main) {
-                        if (isAdded && !isDetached && _binding != null) {
-                            updateLocationText(prayerTimes.location)
-                            updatePrayerTimesFromEnhanced(prayerTimes)
-                            // Don't show notification for successful data loading to reduce spam
-                            Toast.makeText(requireContext(), "Fresh prayer times loaded from online API!", Toast.LENGTH_SHORT).show()
-                            
-                            // Reset GPS/network error flag since location was successfully updated
-                            hasShownGpsNetworkError = false
-                        }
-                    }
+                    // Update the location text with the city name from prayer times
+                    val locationText = prayerTimes.location.ifEmpty { "Current Location" }
+                    binding.locationText.text = "📍 $locationText"
+                    currentCityName = locationText
+                    
+                    // Update prayer times UI with the fresh data
+                    updatePrayerTimesFromManager(prayerTimes)
+                    
+                    Toast.makeText(context, "✅ Location updated: $locationText", Toast.LENGTH_SHORT).show()
+                    Log.d("NamazFragment", "Successfully refreshed location and prayer times: $locationText")
                 } else {
-                    withContext(Dispatchers.Main) {
-                        if (isAdded && !isDetached) {
-                            // Don't show notification for update failure to reduce spam
-                            Toast.makeText(requireContext(), "Failed to fetch fresh online data", Toast.LENGTH_LONG).show()
-                        }
-                    }
+                    // Fallback to GPS location if prayer times manager fails
+                    binding.locationText.text = "📍 Getting GPS location..."
+                    getCurrentLocation()
+                    Toast.makeText(context, "📍 Using GPS location", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    if (isAdded && !isDetached) {
-                        // Don't show notification for update error to reduce spam
-                        Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                }
                 Log.e("NamazFragment", "Error refreshing location and prayer times", e)
+                // Fallback to GPS location
+                binding.locationText.text = "📍 Getting GPS location..."
+                getCurrentLocation()
+                Toast.makeText(context, "📍 Using GPS location", Toast.LENGTH_SHORT).show()
             } finally {
-                // Reset flag after a delay to allow UI to settle
-                delay(2000) // 2 seconds delay
-                isRefreshingData = false
+                // Re-enable the button after update
+                binding.locationButton.isEnabled = true
             }
         }
+    }
+
+    private fun updatePrayerTimesFromManager(prayerTimes: PrayerTimesManager.PrayerTimes) {
+        try {
+            val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            val date = Date()
+            
+            _binding?.let { binding ->
+                binding.namazDateText.text = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(date)
+                
+                // Parse prayer times from string format (HH:MM) to Date objects
+                val fajrTime = parseTimeString(prayerTimes.fajr)
+                val dhuhrTime = parseTimeString(prayerTimes.dhuhr)
+                val asrTime = parseTimeString(prayerTimes.asr)
+                val maghribTime = parseTimeString(prayerTimes.maghrib)
+                val ishaTime = parseTimeString(prayerTimes.isha)
+                
+                binding.fajrTime.text = dateFormat.format(fajrTime)
+                binding.dhuhrTime.text = dateFormat.format(dhuhrTime)
+                binding.asrTime.text = dateFormat.format(asrTime)
+                binding.maghribTime.text = dateFormat.format(maghribTime)
+                binding.ishaTime.text = dateFormat.format(ishaTime)
+
+                // Show next prayer time
+                val currentTime = Calendar.getInstance()
+                val nextPrayer = when {
+                    currentTime.before(fajrTime) -> "Fajr"
+                    currentTime.before(dhuhrTime) -> "Dhuhr"
+                    currentTime.before(asrTime) -> "Asr"
+                    currentTime.before(maghribTime) -> "Maghrib"
+                    currentTime.before(ishaTime) -> "Isha"
+                    else -> "Fajr (Tomorrow)"
+                }
+                
+                binding.namazNextPrayerText.text = "Next Prayer: $nextPrayer"
+            }
+        } catch (e: Exception) {
+            Log.e("NamazFragment", "Error updating prayer times from manager", e)
+            // Fallback to existing prayer times update method
+            updatePrayerTimes()
+        }
+    }
+
+    private fun parseTimeString(timeString: String): Calendar {
+        val parts = timeString.split(":")
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+        calendar.set(Calendar.MINUTE, parts[1].toInt())
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        return calendar
     }
 
     private fun updatePrayerTimesFromEnhanced(prayerTimes: PrayerTimesManager.PrayerTimes) {
@@ -572,46 +743,56 @@ class NamazFragment : Fragment() {
         return nextPrayer
     }
 
-    private fun incrementTasbeehCount() {
-        // Get current tasbeeh count from SharedPreferences
-        val sharedPreferences = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE)
-        val currentCount = sharedPreferences.getInt("tasbeeh_count", 0)
-        val newCount = currentCount + 1
+    private fun testLocationFunctionality() {
+        Log.d("NamazFragment", "Testing location functionality...")
         
-        // Save updated count
-        sharedPreferences.edit().putInt("tasbeeh_count", newCount).apply()
+        // Test if location permission is granted
+        val hasLocationPermission = isLocationPermissionGranted()
+        Log.d("NamazFragment", "Location permission granted: $hasLocationPermission")
         
-        // Update last tasbeeh timestamp for missed tasbeeh notifications
-        NotificationService().updateLastTasbeehTimestamp(requireContext())
-        
-        // Add vibration when incrementing tasbeeh count
-        performVibration()
-        
-        // Show a brief toast to confirm the count
-        Toast.makeText(requireContext(), "Tasbeeh count: $newCount", Toast.LENGTH_SHORT).show()
+        // Test if we can get current location
+        if (hasLocationPermission) {
+            try {
+                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                    .addOnSuccessListener { location: Location? ->
+                        if (location != null) {
+                            Log.d("NamazFragment", "Test: Got location - ${location.latitude}, ${location.longitude}")
+                            // Show coordinates immediately
+                            CoroutineScope(Dispatchers.Main).launch {
+                                if (isAdded && !isDetached && _binding != null) {
+                                    val coordinateText = "📍 Test: ${location.latitude.toFloat()}, ${location.longitude.toFloat()}"
+                                    binding.locationText.text = coordinateText
+                                    Toast.makeText(context, "Location test successful", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } else {
+                            Log.d("NamazFragment", "Test: Location is null")
+                            Toast.makeText(context, "Location test: Location is null", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.e("NamazFragment", "Test: Failed to get location", exception)
+                        Toast.makeText(context, "Location test failed: ${exception.message}", Toast.LENGTH_SHORT).show()
+                    }
+            } catch (e: Exception) {
+                Log.e("NamazFragment", "Test: Exception getting location", e)
+                Toast.makeText(context, "Location test exception: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Log.d("NamazFragment", "Test: No location permission")
+            Toast.makeText(context, "Location test: No permission", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    private fun performVibration() {
-        // Check vibration setting from preferences
-        val vibrationEnabled = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE)
-            .getBoolean("vibration", true)
-        
-        if (vibrationEnabled && vibrator != null) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    if (vibrator?.hasVibrator() == true) {
-                        vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    if (vibrator?.hasVibrator() == true) {
-                        vibrator?.vibrate(50)
-                    }
-                }
-            } catch (e: Exception) {
-                // Handle vibration error silently
-                Log.e("NamazFragment", "Error during vibration: ${e.message}")
-            }
+    private fun showLocationStatus() {
+        val hasPermission = isLocationPermissionGranted()
+        val statusText = if (hasPermission) {
+            "📍 Location permission granted"
+        } else {
+            "📍 Location permission needed"
         }
+        
+        binding.locationText.text = statusText
+        Log.d("NamazFragment", "Location status: $statusText")
     }
 } 

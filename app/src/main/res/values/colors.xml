@@ -15,19 +15,32 @@
     <color name="save_color">#3498DB</color>
     <color name="counter_button_color">#8E44AD</color>
     
-    <!-- Adding missing color resources -->
+    <!-- Primary Colors -->
     <color name="primary">#4CAF50</color>
     <color name="primary_dark">#388E3C</color>
     <color name="primary_light">#C8E6C9</color>
     <color name="accent">#FF4081</color>
+    <color name="primary_color">#FF6200EE</color>
+    <color name="primary_variant">#FF3700B3</color>
+    <color name="secondary_color">#FF03DAC5</color>
+    <color name="secondary_variant">#FF018786</color>
+    
+    <!-- Text Colors -->
     <color name="primary_text">#212121</color>
     <color name="secondary_text">#757575</color>
+    <color name="text_primary">#DE000000</color>
+    <color name="text_secondary">#99000000</color>
+    <color name="text_disabled">#61000000</color>
+    
+    <!-- UI Colors -->
     <color name="icons">#FFFFFF</color>
     <color name="divider">#BDBDBD</color>
-    <color name="background">#F5F5F5</color>
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
     <color name="secondary">#757575</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#FFF5F5F5</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="error">#FFB00020</color>
     
     <!-- Bottom Navigation Colors -->
     <color name="bottom_nav_item_selected">#4CAF50</color>
@@ -36,4 +49,17 @@
     <!-- Background Gradient Colors -->
     <color name="background_gradient_start">#E8F5E9</color>
     <color name="background_gradient_end">#FFFFFF</color>
+    
+    <!-- Prayer Time Specific Colors -->
+    <color name="fajr_color">#FF4A90E2</color>
+    <color name="dhuhr_color">#FFF5A623</color>
+    <color name="asr_color">#FF7ED321</color>
+    <color name="maghrib_color">#FFD0021B</color>
+    <color name="isha_color">#FF9013FE</color>
+    
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#FF667eea</color>
+    <color name="gradient_end">#FF764ba2</color>
+    <color name="next_prayer_start">#FF667eea</color>
+    <color name="next_prayer_end">#FF764ba2</color>
 </resources>

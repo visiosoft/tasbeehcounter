@@ -407,12 +407,12 @@ object PrayerTimesManager {
                 }
                 
                 // Use faster timeout and simpler parameters
-                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&accept-language=en&zoom=8"
+                val url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&accept-language=en&zoom=10&addressdetails=1"
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.setRequestProperty("User-Agent", "TasbeehCounter/1.0")
-                connection.connectTimeout = 3000  // Reduced from 10000
-                connection.readTimeout = 3000     // Reduced from 10000
+                connection.connectTimeout = 5000  // Increased for better accuracy
+                connection.readTimeout = 5000     // Increased for better accuracy
 
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -428,18 +428,66 @@ object PrayerTimesManager {
                     val json = JSONObject(response.toString())
                     val address = json.getJSONObject("address")
                     
-                    // Get city name with proper null/empty string handling
-                    val cityName = address.optString("city").takeIf { it.isNotEmpty() }
-                        ?: address.optString("town").takeIf { it.isNotEmpty() }
-                        ?: address.optString("village").takeIf { it.isNotEmpty() }
-                        ?: address.optString("county").takeIf { it.isNotEmpty() }
-                        ?: address.optString("state").takeIf { it.isNotEmpty() }
-                        ?: "Unknown Location"
+                    // Enhanced city name resolution with better fallback hierarchy
+                    val cityName = when {
+                        // Primary city names
+                        address.optString("city").isNotEmpty() -> {
+                            val city = address.optString("city")
+                            val state = address.optString("state", "")
+                            if (state.isNotEmpty()) "$city, $state" else city
+                        }
+                        address.optString("town").isNotEmpty() -> {
+                            val town = address.optString("town")
+                            val state = address.optString("state", "")
+                            if (state.isNotEmpty()) "$town, $state" else town
+                        }
+                        address.optString("village").isNotEmpty() -> {
+                            val village = address.optString("village")
+                            val state = address.optString("state", "")
+                            if (state.isNotEmpty()) "$village, $state" else village
+                        }
+                        // Suburban areas
+                        address.optString("suburb").isNotEmpty() -> {
+                            val suburb = address.optString("suburb")
+                            val city = address.optString("city", "")
+                            val state = address.optString("state", "")
+                            when {
+                                city.isNotEmpty() && state.isNotEmpty() -> "$suburb, $city, $state"
+                                city.isNotEmpty() -> "$suburb, $city"
+                                state.isNotEmpty() -> "$suburb, $state"
+                                else -> suburb
+                            }
+                        }
+                        // County/Province level
+                        address.optString("county").isNotEmpty() -> {
+                            val county = address.optString("county")
+                            val state = address.optString("state", "")
+                            if (state.isNotEmpty()) "$county, $state" else county
+                        }
+                        // State/Province level
+                        address.optString("state").isNotEmpty() -> {
+                            val state = address.optString("state")
+                            val country = address.optString("country", "")
+                            if (country.isNotEmpty()) "$state, $country" else state
+                        }
+                        // Country level
+                        address.optString("country").isNotEmpty() -> {
+                            address.optString("country")
+                        }
+                        // Display name from Nominatim as last resort
+                        json.optString("display_name").isNotEmpty() -> {
+                            val displayName = json.optString("display_name")
+                            // Extract the most relevant part (usually first part before comma)
+                            displayName.split(",").firstOrNull()?.trim() ?: displayName
+                        }
+                        else -> "Unknown Location"
+                    }
                     
                     // Cache the result
                     geocodingCache[cacheKey] = cityName
                     
                     Log.d(TAG, "Resolved city name: $cityName from coordinates: $latitude, $longitude")
+                    Log.d(TAG, "Full address data: ${address.toString()}")
                     return@withContext cityName
                 } else {
                     Log.e(TAG, "Reverse geocoding failed with response code: $responseCode")
